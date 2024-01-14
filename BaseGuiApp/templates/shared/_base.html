@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, intitial-scale=1.0">
+        <title>Base Gui</title>
+
+        {% load static %}
+
+        <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    </head>
+    <body>
+        {% block content_base %}
+        {% endblock %}
+    </body>
+</html>

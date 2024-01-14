@@ -1,0 +1,21 @@
+{% extends 'shared/_base.html' %}
+
+{% block content_base%}
+
+<div>
+    <nav>
+        <ul>
+            <li>
+                <a href="{% url 'index' %}">Index</a>
+            </li>
+        </ul>
+    </nav>
+    <div>
+        {% block content_main %}
+
+        {% endblock %}
+    </div>
+</div>
+
+
+{% endblock %}
