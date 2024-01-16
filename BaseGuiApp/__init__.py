@@ -1,3 +1,3 @@
-from BaseGuiApp.hardware import oled
+from RPi_Hardware import oled
 
 oled.screen_on()

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from BaseGuiApp.hardware import oled
+from RPi_Hardware import oled
 
 
 def Index(request):
