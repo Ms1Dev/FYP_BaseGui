@@ -27,6 +27,6 @@ class GuiConsumer(AsyncWebsocketConsumer):
 
     async def pollMessages(self):
         while True:
-            data = self.messageReceiver.recv_string()
-            await self.send(text_data=json.dumps({"message": data}))
+            data = self.messageReceiver.recv_json()
+            await self.send(data)
             await asyncio.sleep(1)
