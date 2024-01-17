@@ -3,6 +3,7 @@ import deviceManager
 import queue
 import time
 import threading
+import zmq
 
 class BasePosition:
 
@@ -11,6 +12,11 @@ class BasePosition:
         self.gps = None
         self.barometric = None
         self.position = None
+        
+        zmqContext = zmq.Context()
+        self.messageSender = zmqContext.socket(zmq.PUSH)
+        self.messageSender.bind("tcp://127.0.0.1:5555")
+
         monitorThread = threading.Thread(target=self.monitorPosition)
         monitorThread.start()
 
@@ -36,6 +42,8 @@ class BasePosition:
             pass
         if position:
             self.position = position
+            message = str(position.lat) + ":" + str(position.lon)
+            self.messageSender.send_string(message)
 
     def filterGPGGA(self, line : str):
         try:
@@ -48,4 +56,6 @@ class BasePosition:
 
 
 
+dm = deviceManager.DeviceManager()
+basePosition = BasePosition(dm)
 
