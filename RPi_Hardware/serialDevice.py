@@ -1,35 +1,41 @@
 import serial
 import threading
-import queue
 
 class SerialDevice:
     def __init__(self, port, baudrate):
-        self.uart = serial.Serial(port=port, baudrate=baudrate, timeout=5)
+        print(port)
+        self.uart = serial.Serial(port=port, baudrate=baudrate, timeout=10)
         self.uart_lock = threading.Lock()
         listen_thread = threading.Thread(target=self.listen)
-        listen_thread.daemon = True
         listen_thread.start()
-        self.output_queue = queue.Queue()
+        self.output_queues = []
+        self.connectionFailCallbacks = []
 
     def listen(self):
         while True:
             with self.uart_lock:
                 try:
-                    recv = self.uart.read_until(b'\n')
+                    recv = self.uart.read_all()
                 except serial.serialutil.SerialException:
-                    if self.connectionFailCallback:
-                        self.connectionFailCallback()
+                    for callback in self.connectionFailCallbacks:
+                        callback()
                     break
             if recv:
-                self.output_queue.put(recv)
+                print(recv.decode("UTF-8", errors="ignore"))
+                for queue in self.output_queues:
+                    queue.put(recv)
+                    
 
     def send(self, message):
         message = message.encode("UTF-8")
         with self.uart_lock:
             self.uart.write(message)
 
-    def getQueue(self):
-        return self.output_queue
+    def addQueue(self, queue):
+        self.output_queues.append(queue)
     
-    def setConnectionFailCallback(self, connectionFailCallback):
-        self.connectionFailCallback = connectionFailCallback
+    def addConnectionFailCallback(self, connectionFailCallback):
+        self.connectionFailCallbacks.append(connectionFailCallback)
+
+
+# sd = SerialDevice("/dev/ttyACM0", 115200)

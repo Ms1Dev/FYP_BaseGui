@@ -10,6 +10,7 @@ class DeviceManager:
             self.product_name = product_name
             self.serialDevice = None
             self.baudrate = baudrate
+            self.lock = threading.Lock()
 
         def isConnected(self):
             return self.serialDevice is not None
@@ -17,12 +18,8 @@ class DeviceManager:
         def connect(self, port):
             if not self.isConnected():
                 self.serialDevice = serialDevice.SerialDevice(port, self.baudrate)
-                self.serialDevice.setConnectionFailCallback(self.connectionFailCallback)
+                self.serialDevice.addConnectionFailCallback(self.connectionFailCallback)
 
-        def getOutputQueue(self):
-            if self.isConnected():
-                return self.serialDevice.getQueue()
-        
         def getSerialDevice(self):
             return self.serialDevice
         
