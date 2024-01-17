@@ -1,19 +1,20 @@
-from pynmeagps import nmeahelpers, NMEAMessage
+from pynmeagps import nmeahelpers, NMEAMessage, NMEAReader
 import deviceManager
 import queue
 import time
+import threading
 
 class BasePosition:
 
     def __init__(self, deviceManager : deviceManager.DeviceManager):
         self.deviceManager = deviceManager
-        self.queue = queue.Queue()
         self.gps = None
         self.barometric = None
-        self.updateListeners = []
+        self.position = None
+        monitorThread = threading.Thread(target=self.monitorPosition)
+        monitorThread.start()
 
     def gpsConnectionLostCallback(self):
-        print("what")
         self.gps = None
 
     def monitorPosition(self):
@@ -23,18 +24,19 @@ class BasePosition:
                 time.sleep(0.5)
 
             self.gps.addConnectionFailCallback(self.gpsConnectionLostCallback)
-            self.gps.addQueue(self.queue)
 
             while self.gps != None:
-                line = None
-                try:
-                    line = self.queue.get(timeout=1)
-                except queue.Empty:
-                    pass
-                if line:
-                    line = self.filterGPGGA(line.decode("UTF-8", errors="ignore"))
+                self.messageReceived(self.gps.listen())
 
-    
+    def messageReceived(self, message):
+        message = self.filterGPGGA(message.decode("UTF-8", errors="ignore"))
+        try:
+            position = NMEAReader.parse(message)
+        except:
+            pass
+        if position:
+            self.position = position
+
     def filterGPGGA(self, line : str):
         try:
             start = line.index("GPGGA")
@@ -44,12 +46,6 @@ class BasePosition:
         except ValueError:
             return None
 
-
-dm = deviceManager.DeviceManager()
-
-bp = BasePosition(dm)
-
-bp.monitorPosition()
 
 
 
