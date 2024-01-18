@@ -4,13 +4,15 @@ import time
 import threading
 import zmq
 import json
+from typing import Tuple, Any
+import queue
 
 class Data:
     pressureUnits = "mb"
     temperatureUnits = "°C"
 
     class Connection(threading.Thread):
-        def __init__(self, connectedDevice : deviceManager.DeviceManager.ConnectedDevice, recvCallback):
+        def __init__(self, connectedDevice : deviceManager.ConnectedDevice, recvCallback):
             super().__init__()
             self.connectedDevice = connectedDevice
             self.device = None
@@ -41,17 +43,18 @@ class Data:
             self.recvCallback(message)
 
 
-    def __init__(self):
-        self.deviceManager = deviceManager.DeviceManager()
+    def __init__(self, ctrlDataQueue = None, ctrlPointsOfInterest = []):
         self.connections = {
-            "hc12"      : Data.Connection(self.deviceManager.hc12, self.receiveHc12),
-            "gps"       : Data.Connection(self.deviceManager.gps, self.receiveGps),
-            "barometric": Data.Connection(self.deviceManager.barometric, self.receiveBaro),
-            "antenna"   : Data.Connection(self.deviceManager.antenna, self.receiveAnt)
+            "hc12"      : Data.Connection(deviceManager.hc12, self.receiveHc12),
+            "gps"       : Data.Connection(deviceManager.gps, self.receiveGps),
+            "barometric": Data.Connection(deviceManager.barometric, self.receiveBaro),
+            "antenna"   : Data.Connection(deviceManager.antenna, self.receiveAnt)
         }
         self.data = {}
-        self.broadcast()
-
+        self.ctrlDataQueue = ctrlDataQueue
+        self.ctrlPointsOfInterest = ctrlPointsOfInterest
+        # self.broadcast()
+    
 
     def broadcast(self):
         zmqContext = zmq.Context()
@@ -66,29 +69,42 @@ class Data:
     def receiveHc12(self, data):
         message : NMEAMessage = self.filterGpsSentence(data)
         if message is not None:
-            self.data["mobile_gps_pos"] = self.formattedCoords(message)
+            self.addToData("mobile_gps_pos", self.formattedCoords(message))
 
 
     def receiveGps(self, data):
         message : NMEAMessage = self.filterGpsSentence(data)
         if message is not None:
-            self.data["base_gps_pos"] = self.formattedCoords(message)
+            self.addToData("base_gps_pos", self.formattedCoords(message))
         
 
     def receiveBaro(self, data):
         if data is not None:
             data = data.decode("UTF-8", errors="ignore").strip()
             if data[0] == "T":
-                self.data["base_temperature"] = data[2:] + self.temperatureUnits
+                self.addToData("base_temperature", data[2:] + self.temperatureUnits)
             elif data[0] == "P":
-                self.data["base_pressure"] = data[2:] + self.pressureUnits
+                self.addToData("base_pressure", data[2:] + self.pressureUnits)
         else:
-            self.data.pop("base_pressure", None)
-            self.data.pop("base_temperature", None)
+            self.removeFromData("base_pressure")
+            self.removeFromData("base_temperature")
 
     def receiveAnt(self, data):
         print(data)
 
+    
+    def addToData(self, label, value):
+        self.data[label] = value
+        if label in self.ctrlPointsOfInterest:
+            self.forwardDataToCtrl((label,value))
+
+    def removeFromData(self, label):
+        self.data.pop(label, None)
+
+    def forwardDataToCtrl(self, data : Tuple[str,Any]):
+        if self.ctrlDataQueue is not None:
+            self.ctrlDataQueue.put(data)
+        
 
     def formattedCoords(self, nmeamessage : NMEAMessage):
         return {"lat" : nmeamessage.lat, "lon" : nmeamessage.lon, "alt" : nmeamessage.alt}
@@ -105,4 +121,6 @@ class Data:
                 return parsed
 
 
-data = Data()
+# data = Data()
+
+# data.broadcast()
