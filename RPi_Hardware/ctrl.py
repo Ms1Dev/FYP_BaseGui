@@ -8,6 +8,8 @@ import math
 import socket
 import oled
 from pvlib import atmosphere
+import zmq
+import time
 
 class Ctrl:
 
@@ -21,17 +23,33 @@ class Ctrl:
     def __init__(self):
         self.antennaConnection = deviceManager.antenna
         self.dataQueue = queue.Queue()
+        self.cmdQueue = queue.Queue()
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
         self.mobile_pos = (52.9263, -1.1267)
         self.base_pos = None
         self.mobile_alt_relative = None
         self.base_alt_relative = None
         self.calibratedVerticalDiff = 0.0
+
         threading.Thread(target=self.getIpAddr).start()
         dataBroadcastThread = threading.Thread(target=self.data.broadcast)
+        commandRecvThread = threading.Thread(target=self.cmdListen)
+
+        zmqContext = zmq.Context()
+        self.receiver = zmqContext.socket(zmq.PULL)
+        self.receiver.bind("tcp://127.0.0.1:5556")
+
+        commandRecvThread.daemon = True
+        commandRecvThread.start()
         dataBroadcastThread.daemon = True
         dataBroadcastThread.start()
-        self.monitorData()
+        self.monitor()
+
+
+    def cmdListen(self):
+        while True:
+            cmd = self.receiver.recv_json()
+            self.cmdQueue.put(cmd)
 
 
     def altFromPressure(self, pressure):
@@ -47,14 +65,14 @@ class Ctrl:
             pass
 
 
-    def getElevation(self, altFrom, altTo, posFrom, posTo):
+    def getElevation(self, posFrom, posTo):
         try:
             planarDistance = nmeahelpers.planar(posFrom[0], posFrom[1], posTo[0], posTo[1])
         except TypeError:
             return None
-        print("pd " + str(planarDistance))
+        # print("pd " + str(planarDistance))
         verticalDistance = self.getVerticalDistance()
-        print("vd " + str(verticalDistance))
+        # print("vd " + str(verticalDistance))
         elevation = math.atan(verticalDistance / planarDistance)
         return math.degrees(elevation)
 
@@ -96,7 +114,7 @@ class Ctrl:
 
     def updateAntennaElevation(self):
         if self.hasPositions() and self.hasElevations():
-            elevation = self.getElevation(self.base_alt_relative, self.mobile_alt_relative, self.base_pos, self.mobile_pos)
+            elevation = self.getElevation(self.base_pos, self.mobile_pos)
             self.moveAntenna(el = elevation)
 
 
@@ -133,11 +151,25 @@ class Ctrl:
             pass
 
 
-    def monitorData(self):
+    def monitor(self):
         while True:
-            self.newData(self.dataQueue.get())
+            try:
+                self.newData(self.dataQueue.get(block=False))
+            except queue.Empty:
+                pass
+            try:
+                self.runCmd(self.cmdQueue.get(block=False))
+            except queue.Empty:
+                pass
+            
+            time.sleep(0.1)
+                
 
-    
+    def runCmd(self, cmd):
+        if cmd["message"] == "cal":
+            self.calibrateVerticalDistance()
+
+
     def getIpAddr(self):
         addr = None
         while addr is None:

@@ -53,7 +53,6 @@ class Data:
         self.data = {}
         self.ctrlDataQueue = ctrlDataQueue
         self.ctrlPointsOfInterest = ctrlPointsOfInterest
-        # self.broadcast()
     
 
     def broadcast(self):
@@ -89,8 +88,7 @@ class Data:
         
 
     def receiveBaro(self, data):
-        
-        if data is not None:
+        if len(data) > 1:
             data = data.decode("UTF-8", errors="ignore").strip()
             if data[0] == "T":
                 self.addToData("base_temperature", data[2:] + self.temperatureUnits)
@@ -99,6 +97,7 @@ class Data:
         else:
             self.removeFromData("base_pressure")
             self.removeFromData("base_temperature")
+
 
     def receiveAnt(self, data):
         print(data)

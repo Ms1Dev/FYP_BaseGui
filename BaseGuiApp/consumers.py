@@ -10,8 +10,11 @@ class GuiConsumer(AsyncWebsocketConsumer):
         super().__init__()
         zmqContext = zmq.Context()
 
-        self.messageReceiver = zmqContext.socket(zmq.PULL)
-        self.messageReceiver.connect("tcp://127.0.0.1:5555")
+        self.receiver = zmqContext.socket(zmq.PULL)
+        self.receiver.connect("tcp://127.0.0.1:5555")
+
+        self.sender = zmqContext.socket(zmq.PUSH)
+        self.sender.connect("tcp://127.0.0.1:5556")
 
     async def connect(self):
         await self.accept()
@@ -20,13 +23,14 @@ class GuiConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         pass
 
+
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json["message"]
-        await self.send(text_data=json.dumps({"message": message + "eeffe"}))
+        data_json = json.loads(text_data)
+        self.sender.send_json(data_json)
+        
 
     async def pollMessages(self):
         while True:
-            data = self.messageReceiver.recv_json()
+            data = self.receiver.recv_json()
             await self.send(data)
             await asyncio.sleep(1)
