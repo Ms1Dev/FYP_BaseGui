@@ -1,4 +1,4 @@
-from pynmeagps import NMEAMessage, NMEAReader
+from pynmeagps import NMEAMessage, NMEAReader, nmeahelpers
 import deviceManager
 import time
 import threading
@@ -66,10 +66,20 @@ class Data:
             time.sleep(1)
 
     
-    def receiveHc12(self, data):
-        message : NMEAMessage = self.filterGpsSentence(data)
-        if message is not None:
-            self.addToData("mobile_gps_pos", self.formattedCoords(message))
+    def receiveHc12(self, data): 
+        dataStr = data.decode("UTF-8", errors="ignore").strip()   
+        dataLabel = dataStr[:2]
+        if dataLabel == "P=":
+            value = dataStr[2:]
+            self.addToData("mobile_pressure", value + self.pressureUnits)
+        elif dataLabel == "T=":
+            value = dataStr[2:]
+            self.addToData("mobile_temperature", value + self.temperatureUnits)
+
+        else:
+            message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''))
+            if message is not None:
+                self.addToData("mobile_gps_pos", self.formattedCoords(message))
 
 
     def receiveGps(self, data):
@@ -79,6 +89,7 @@ class Data:
         
 
     def receiveBaro(self, data):
+        
         if data is not None:
             data = data.decode("UTF-8", errors="ignore").strip()
             if data[0] == "T":
@@ -112,13 +123,13 @@ class Data:
 
     def filterGpsSentence(self, line : str, filter = "GPGGA"):
         try:
-            parsed = NMEAReader.parse(line)
-            identity = parsed.identity
+            nmeaMessage = NMEAReader.parse(line)
+            identity = nmeaMessage.identity
         except Exception:
             return None
-        else:
+        else:          
             if identity == filter:
-                return parsed
+                return nmeaMessage
 
 
 # data = Data()

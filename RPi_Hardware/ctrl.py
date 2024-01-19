@@ -24,8 +24,9 @@ class Ctrl:
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
         self.mobile_pos = (52.9263, -1.1267)
         self.base_pos = None
-        self.mobile_alt_relative = 47
+        self.mobile_alt_relative = None
         self.base_alt_relative = None
+        self.calibratedVerticalDiff = 0.0
         threading.Thread(target=self.getIpAddr).start()
         dataBroadcastThread = threading.Thread(target=self.data.broadcast)
         dataBroadcastThread.daemon = True
@@ -40,16 +41,32 @@ class Ctrl:
 
 
     def getBearing(self, posFrom, posTo):
-        return nmeahelpers.bearing(posFrom[0], posFrom[1], posTo[0], posTo[1])
+        try:
+            return nmeahelpers.bearing(posFrom[0], posFrom[1], posTo[0], posTo[1])
+        except TypeError:
+            pass
 
 
     def getElevation(self, altFrom, altTo, posFrom, posTo):
-        planarDistance = nmeahelpers.planar(posFrom[0], posFrom[1], posTo[0], posTo[1])
+        try:
+            planarDistance = nmeahelpers.planar(posFrom[0], posFrom[1], posTo[0], posTo[1])
+        except TypeError:
+            return None
         print("pd " + str(planarDistance))
-        verticalDistance = altTo - altFrom 
+        verticalDistance = self.getVerticalDistance()
         print("vd " + str(verticalDistance))
         elevation = math.atan(verticalDistance / planarDistance)
         return math.degrees(elevation)
+
+
+    def getVerticalDistance(self):
+        if self.hasElevations():
+            return self.mobile_alt_relative - self.base_alt_relative - self.calibratedVerticalDiff
+    
+
+    def calibrateVerticalDistance(self):
+        if self.hasElevations():
+            self.calibratedVerticalDiff = self.mobile_alt_relative - self.base_alt_relative
 
 
     def moveAntenna(self, az = None, el = None):
@@ -80,11 +97,12 @@ class Ctrl:
     def updateAntennaElevation(self):
         if self.hasPositions() and self.hasElevations():
             elevation = self.getElevation(self.base_alt_relative, self.mobile_alt_relative, self.base_pos, self.mobile_pos)
-            print(elevation)
             self.moveAntenna(el = elevation)
 
 
     def newData(self, data : Tuple[str, Any]):
+        # print(data[0] + " : " + str(data[1]))
+
         if data[0] == "base_gps_pos":
             self.base_pos = (data[1]["lat"], data[1]["lon"])
             self.printPos(self.base_pos, 1)
@@ -96,16 +114,23 @@ class Ctrl:
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.base_alt_relative = self.altFromPressure(pressure)
+            print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
+            print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
         elif data[0] == "mobile_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.mobile_alt_relative = self.altFromPressure(pressure)
+            print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
+            print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
 
 
     def printPos(self, pos, row):
-        oled.print_text("Base: " + str(round(pos[0], 3)) + " ,  " + str(round(pos[1], 3)), row)
+        try:
+            oled.print_text("Base: " + str(round(pos[0], 3)) + " ,  " + str(round(pos[1], 3)), row)
+        except TypeError as e:
+            pass
 
 
     def monitorData(self):
