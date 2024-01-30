@@ -74,7 +74,6 @@ class Data:
         elif dataLabel == "T=":
             value = dataStr[2:]
             self.addToData("mobile_temperature", value + self.temperatureUnits)
-
         else:
             message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''))
             if message is not None:
@@ -100,9 +99,13 @@ class Data:
 
 
     def receiveAnt(self, data):
-        print(data)
-
+        data = data.decode("UTF-8", errors="ignore").strip()
+        if data[:3] == "AZ=":
+            self.addToData("antenna_azimuth", data[3:])
+        elif data[:3] == "EL=":
+            self.addToData("antenna_elevation", data[3:])
     
+
     def addToData(self, label, value):
         self.data[label] = value
         if label in self.ctrlPointsOfInterest:
@@ -127,7 +130,7 @@ class Data:
         except Exception:
             return None
         else:          
-            if identity == filter:
+            if identity == filter and nmeaMessage.lat is not None and nmeaMessage.lon is not None:
                 return nmeaMessage
 
 

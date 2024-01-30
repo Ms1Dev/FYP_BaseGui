@@ -5,21 +5,55 @@
 
 
 
-
-
-<h1>Index</h1>
-
 <p id="incoming_message"></p>
 
-<textarea id="chat-log" cols="100" rows="20"></textarea><br>
+
+<div class="container d-flex flex-row">
+    <div id="map" class="flex-grow-2"></div>
+    <div id="control-interface" class="d-flex flex-grow-1 flex-column">
+        <div id="antenna-interface" class="border flex-grow-1">
+            <h4>Antenna</h4>
+            <div class="d-flex flex-row p-2 h-100">
+                <div class="card col-6">
+                    <div class="card-header">
+                    Data
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <label>Coordinates</label>
+                            <input>
+                            <label>Altitude</label>
+                            <input>
+                            <label>Bearing</label>
+                            <input>
+                        </form>
+                    </div>
+                </div>
+                <div class="card col-6">
+                    <div class="card-header">
+                    Control Override
+                    </div>
+                    <div class="card-body">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="device-interface" class="border flex-grow-1">
+
+        </div>
+    </div>
+</div>
+
+<!-- <textarea id="chat-log" cols="100" rows="20"></textarea><br>
 <input id="chat-message-input" type="text" size="100"><br>
-<input id="chat-message-submit" type="button" value="Send">
+<input id="chat-message-submit" type="button" value="Send"> -->
 
 
 <script>
     const socket = new WebSocket(
         // 'ws://' + window.location.host + '/ws/gui/'
-        'ws://' + "127.0.0.1:8000" + '/ws/gui/'
+        'ws://' + "127.0.0.1:8001" + '/ws/gui/'
     );
 
     socket.onmessage = function(e) {

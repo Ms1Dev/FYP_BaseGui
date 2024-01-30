@@ -25,11 +25,11 @@ class Ctrl:
         self.dataQueue = queue.Queue()
         self.cmdQueue = queue.Queue()
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
-        self.mobile_pos = (52.9263, -1.1267)
+        self.mobile_pos = None
         self.base_pos = None
         self.mobile_alt_relative = None
         self.base_alt_relative = None
-        self.calibratedVerticalDiff = 0.0
+        self.calibratedVerticalDiff = self.loadCalibrationValue()
 
         threading.Thread(target=self.getIpAddr).start()
         dataBroadcastThread = threading.Thread(target=self.data.broadcast)
@@ -51,6 +51,22 @@ class Ctrl:
             cmd = self.receiver.recv_json()
             self.cmdQueue.put(cmd)
 
+
+    def loadCalibrationValue(self):
+        try:
+            with open("./calibration_value.txt") as calibrationValue:
+                return float(calibrationValue.readline())
+        except Exception:
+            return 0.0    
+
+
+    def storeCalibrationValue(self, value):
+        try:
+            with open("./calibration_value.txt", "w") as calibrationValue:
+                calibrationValue.write(str(value))
+        except Exception:
+            pass  
+        
 
     def altFromPressure(self, pressure):
         pressure = float(pressure)
@@ -85,6 +101,7 @@ class Ctrl:
     def calibrateVerticalDistance(self):
         if self.hasElevations():
             self.calibratedVerticalDiff = self.mobile_alt_relative - self.base_alt_relative
+            self.storeCalibrationValue(self.calibratedVerticalDiff)
 
 
     def moveAntenna(self, az = None, el = None):
@@ -132,15 +149,15 @@ class Ctrl:
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.base_alt_relative = self.altFromPressure(pressure)
-            print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
-            print("Diff: " + str(self.getVerticalDistance()))
+            # print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
+            # print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
         elif data[0] == "mobile_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.mobile_alt_relative = self.altFromPressure(pressure)
-            print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
-            print("Diff: " + str(self.getVerticalDistance()))
+            # print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
+            # print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
 
 

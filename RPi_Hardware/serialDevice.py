@@ -18,7 +18,6 @@ class SerialDevice:
  
     def send(self, message):
         message = message.encode("UTF-8")
-        print(message)
         self.uart.write(message)
 
     def addQueue(self, queue):
