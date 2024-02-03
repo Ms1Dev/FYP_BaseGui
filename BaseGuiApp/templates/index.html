@@ -9,27 +9,55 @@
 
 
 <div class="container d-flex flex-row">
-    <div id="map" class="flex-grow-2"></div>
+    <div id="map" class="flex-grow-1"></div>
     <div id="control-interface" class="d-flex flex-grow-1 flex-column">
-        <div id="antenna-interface" class="border flex-grow-1">
-            <h4>Antenna</h4>
-            <div class="d-flex flex-row p-2 h-100">
-                <div class="card col-6">
+        <div id="antenna-interface" class="border d-flex flex-column flex-grow-1 m-1 rounded">
+            <h4 class="m-auto p-2">Antenna</h4>
+            <div class="d-flex flex-row p-2 h-100 gap-2">
+                <div class="card control-interface-card">
                     <div class="card-header">
                     Data
                     </div>
                     <div class="card-body">
                         <form>
                             <label>Coordinates</label>
-                            <input>
+                            <input class="form-control">
                             <label>Altitude</label>
-                            <input>
+                            <input class="form-control">
                             <label>Bearing</label>
-                            <input>
+                            <input class="form-control">
                         </form>
                     </div>
                 </div>
-                <div class="card col-6">
+                <div class="card control-interface-card">
+                    <div class="card-header">
+                    Control Override
+                    </div>
+                    <div class="card-body">
+                        <div id="azimuth-slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="device-interface" class="border d-flex flex-column flex-grow-1 m-1 rounded">
+            <h4 class="m-auto p-2">Device</h4>
+            <div class="d-flex flex-row p-2 h-100 gap-2">
+                <div class="card control-interface-card">
+                    <div class="card-header">
+                    Data
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <label>Coordinates</label>
+                            <input class="form-control">
+                            <label>Altitude</label>
+                            <input class="form-control">
+                            <label>Bearing</label>
+                            <input class="form-control">
+                        </form>
+                    </div>
+                </div>
+                <div class="card control-interface-card">
                     <div class="card-header">
                     Control Override
                     </div>
@@ -38,9 +66,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div id="device-interface" class="border flex-grow-1">
-
         </div>
     </div>
 </div>
