@@ -107,10 +107,10 @@ class Ctrl:
     def moveAntenna(self, az = None, el = None):
         if self.antennaConnection.isConnected():
             device = self.antennaConnection.getSerialDevice()
-            if az:
+            if az is not None:
                 az = str(math.trunc(az))
                 device.send("A" + az + "\n")
-            if el:
+            if el is not None:
                 el = str(math.trunc(el))
                 device.send("E" + el + "\n")
 
@@ -183,8 +183,13 @@ class Ctrl:
                 
 
     def runCmd(self, cmd):
-        if cmd["message"] == "cal":
+        print(cmd)
+        if "cal" in cmd:
             self.calibrateVerticalDistance()
+        elif "azimuth" in cmd:
+            self.moveAntenna(az = cmd["azimuth"])
+        elif "elevation" in cmd:
+            self.moveAntenna(el = cmd["elevation"])
 
 
     def getIpAddr(self):
