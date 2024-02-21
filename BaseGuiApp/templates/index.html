@@ -21,11 +21,9 @@
                     <div class="card-body">
                         <form>
                             <label>Coordinates</label>
-                            <input class="form-control">
-                            <label>Altitude</label>
-                            <input class="form-control">
-                            <label>Bearing</label>
-                            <input class="form-control">
+                            <input class="form-control" id="base-coordinates">
+                            <label>Temperature</label>
+                            <input class="form-control" id="base-temperature">
                         </form>
                     </div>
                 </div>
@@ -33,11 +31,17 @@
                     <div class="card-header">
                     Control Override
                     </div>
-                    <div class="card-body">
+                    <div class="card-body d-flex flex-row overflow-hidden">
                         <div id="elevation-slider"></div>
+                        <div class="m-auto">
+                            <img id="antenna-side-image" src="../static/images/outdoor-antenna.png">
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body d-flex flex-row">
                         <div id="azimuth-slider"></div>
+                        <div class="m-auto">
+                            <img id="antenna-top-image" src="../static/images/outdoor-antenna.png">
+                        </div>
                     </div>
 
                 </div>
@@ -53,11 +57,9 @@
                     <div class="card-body">
                         <form>
                             <label>Coordinates</label>
-                            <input class="form-control">
-                            <label>Altitude</label>
-                            <input class="form-control">
-                            <label>Bearing</label>
-                            <input class="form-control">
+                            <input class="form-control" id="mobile-coordinates">
+                            <label>Temperature</label>
+                            <input class="form-control" id="mobile-temperature">
                         </form>
                     </div>
                 </div>
