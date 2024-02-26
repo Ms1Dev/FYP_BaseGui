@@ -111,7 +111,7 @@ class Ctrl:
 
 
     def homeAntenna(self):
-        self.antennaConnection.getSerialDevice().send("H1")
+        self.antennaConnection.getSerialDevice().send("H1\n")
 
     
     def hasElevations(self):
@@ -173,6 +173,7 @@ class Ctrl:
                 
 
     def runCmd(self, cmd):
+        print(cmd)
         if "cal" in cmd:
             self.calibrateVerticalDistance()
         elif "antenna_home" in cmd:

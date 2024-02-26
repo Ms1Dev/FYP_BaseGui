@@ -9,3 +9,14 @@
 .control-interface-card {
     flex: 1;
 }
+
+.dropdown-menu > li:hover > .nested-dropdown {
+    display: block;
+}
+
+.nested-dropdown {
+    display: none;
+    position: absolute;
+    right: 99%;
+    top: 70px;
+}

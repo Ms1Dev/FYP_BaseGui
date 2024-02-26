@@ -4,8 +4,24 @@
 
 <div>
     <nav class="d-flex flex-row shadow p-3">
-        <button class="relative btn btn-primary">Menu</button>
         <h2 class="m-auto">Base Control Interface</h2>
+        <div id="options-menu" class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Options
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li><a id="home-antenna" class="dropdown-item" href="#">Home Antenna</a></li>
+                <li><a id="calibrate-altitude" class="dropdown-item" href="#">Calibrate Altitude</a></li>
+                <li><a class="dropdown-item" href="#">Base Position Mode</a>
+                    <ul class="dropdown-menu nested-dropdown dropdown-menu-dark">
+                        <li><a id="base-pos-mode-avg" class="dropdown-item" href="#">Average</a></li>
+                        <li><a id="base-pos-mode-live" class="dropdown-item" href="#">Live</a></li>
+                        <li><a id="base-pos-mode-lock" class="dropdown-item" href="#">Lock</a></li>
+                        <li><a id="base-pos-mode-man" class="dropdown-item" href="#">Manual</a></li>
+                    </ul>
+                </li>
+            </ul>
+          </div>
     </nav>
     <div>
         {% block content_main %}

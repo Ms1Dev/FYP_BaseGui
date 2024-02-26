@@ -6,6 +6,11 @@
  * 
  */
 
+$(document).ready(function() {
+    disableControls();
+});
+
+
 const socket = new WebSocket(
     'ws://' + window.location.host + '/ws/gui/'
     // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
@@ -21,7 +26,7 @@ socket.onclose = function(e) {
 };
 
 socket.onopen = function(e) {
-    socket.send(JSON.stringify({"message":"new"}))
+    enableControls();
 }
 
 
@@ -80,6 +85,9 @@ $("#elevation-slider").roundSlider({
 });
 
 
+
+
+
 /**
  * 
  * 
@@ -99,9 +107,11 @@ let mobile_temperature_input = $("#mobile-temperature");
 
 let antenna_side_image = $("#antenna-side-image");
 var antenna_current_elevation = 0;
+let antenna_elevation_value = $("#antenna-elevation-value");
 
 let antenna_top_image = $("#antenna-top-image");
 var antenna_current_bearing = 0;
+let antenna_azimuth_value = $("#antenna-azimuth-value");
 
 
 let jumped_to_location = false;
@@ -148,11 +158,13 @@ function dataReceived(data) {
     if (data["antenna_azimuth"]) {
         move_degrees = data["antenna_azimuth"] - antenna_current_bearing;
         antenna_top_image.css("transform", "rotate(" + move_degrees + "deg)");
+        antenna_azimuth_value.html(data["antenna_azimuth"]);
     }
 
     if (data["antenna_elevation"]) {
         move_degrees = data["antenna_elevation"] - antenna_current_elevation;
         antenna_side_image.css("transform", "rotate(" + move_degrees + "deg)");
+        antenna_elevation_value.html(data["antenna_elevation"]);
     }
 
     if (data["mobile_gps_pos"]) {
@@ -173,3 +185,116 @@ function dataReceived(data) {
     }
 
 }
+
+
+function disableControls() {
+    $("#options-menu button").attr('disabled', 'disabled');
+    $("#manualOverride").attr('disabled', 'disabled');
+}
+
+
+function enableControls() {
+    $("#options-menu button").removeAttr('disabled');
+    $("#manualOverride").removeAttr('disabled');
+}
+
+
+/**
+ * 
+ * 
+ *     Controls
+ * 
+ * 
+ */
+
+
+$("#manualOverride").change(function() {
+    if ($(this).is(":checked")) {
+        socket.send(JSON.stringify({
+            "antenna_ctrl" : "man"
+        }));
+        $("#azimuth-slider").show(500);
+        $("#elevation-slider").show(500);
+    }
+    else {
+        socket.send(JSON.stringify({
+            "antenna_ctrl" : "auto"
+        }));
+        $("#azimuth-slider").hide(500);
+        $("#elevation-slider").hide(500);
+    }
+});
+
+
+$("#calibrate-altitude").on("click", function() {
+    socket.send(JSON.stringify({
+        "cal" : true
+    }));
+});
+
+
+$("#home-antenna").on("click", function() {
+    socket.send(JSON.stringify({
+        "antenna_home" : true
+    }));
+});
+
+
+$("#base-pos-mode-avg").on("click", function() {
+    socket.send(JSON.stringify({
+        "antenna_pos" : {
+            "mode" : "avg"
+        }
+    }));
+    if (base_marker) {
+        base_marker.dragging.disable();
+    }
+});
+
+
+$("#base-pos-mode-live").on("click", function() {
+    socket.send(JSON.stringify({
+        "antenna_pos" : {
+            "mode" : "live"
+        }
+    }));
+    if (base_marker) {
+        base_marker.dragging.disable();
+    }
+});
+
+
+$("#base-pos-mode-lock").on("click", function() {
+    socket.send(JSON.stringify({
+        "antenna_pos" : {
+            "mode" : "fixed"
+        }
+    }));
+    if (base_marker) {
+        base_marker.dragging.disable();
+    }
+});
+
+
+$("#base-pos-mode-man").on("click", function() {
+    socket.send(JSON.stringify({
+        "antenna_pos" : {
+            "mode" : "fixed"
+        }
+    }));
+
+    if (base_marker) {
+        base_marker.dragging.enable();
+        base_marker.on("dragend", function(event) {
+            let latlng = event.target.getLatLng();
+            console.log(latlng);
+            socket.send(JSON.stringify({
+                "antenna_pos" : {
+                    "mode" : "fixed",
+                    "pos" : [latlng["lat"], latlng["lng"]]
+                }
+            }));
+        });
+    }
+});
+
