@@ -64,6 +64,15 @@ class Data:
             self.messageSender.send_json(dataJson)
             time.sleep(1)
 
+
+    def send(self, json):
+        try:
+            if self.messageSender:
+                self.messageSender.send_json(json)
+            return True
+        except:
+            return False
+        
     
     def receiveHc12(self, data): 
         dataStr = data.decode("UTF-8", errors="ignore").strip()   
@@ -99,11 +108,14 @@ class Data:
 
 
     def receiveAnt(self, data):
-        data = data.decode("UTF-8", errors="ignore").strip()
-        if data[:3] == "AZ=":
-            self.addToData("antenna_azimuth", data[3:])
-        elif data[:3] == "EL=":
-            self.addToData("antenna_elevation", data[3:])
+        try:
+            data = data.decode("UTF-8", errors="ignore").strip()
+            if data[:3] == "AZ=":
+                self.addToData("antenna_azimuth", data[3:])
+            elif data[:3] == "EL=":
+                self.addToData("antenna_elevation", data[3:])
+        except:
+            pass
     
 
     def addToData(self, label, value):

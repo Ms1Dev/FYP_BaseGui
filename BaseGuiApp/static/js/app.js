@@ -7,8 +7,8 @@
  */
 
 const socket = new WebSocket(
-    // 'ws://' + window.location.host + '/ws/gui/'
-    'ws://' + "127.0.0.1:8001" + '/ws/gui/'
+    'ws://' + window.location.host + '/ws/gui/'
+    // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
 );
 
 socket.onmessage = function(e) {
@@ -124,9 +124,9 @@ var base_marker_icon = new L.Icon({
 
 function dataReceived(data) {
     console.log(data);
-    if (data["base_gps_pos"]) {
-        let lat = data["base_gps_pos"]["lat"];
-        let lon = data["base_gps_pos"]["lon"];
+    if (data["base_ctrl_coord"]) {
+        let lat = data["base_ctrl_coord"][0];
+        let lon = data["base_ctrl_coord"][1];
         if (base_marker == null) {
             base_marker = new L.Marker([lat, lon], {icon: base_marker_icon});
             base_marker.addTo(map);
@@ -138,7 +138,7 @@ function dataReceived(data) {
             jumped_to_location = true;
             map.panTo(new L.LatLng(lat, lon));
         }
-        base_coords_input.val(lat + ", " + lon);
+        base_coords_input.val(lat.toFixed(7) + ", " + lon.toFixed(7));
     }
 
     if (data["base_temperature"]) {
