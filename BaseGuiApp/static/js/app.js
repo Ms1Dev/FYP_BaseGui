@@ -7,8 +7,8 @@
  */
 
 const socket = new WebSocket(
-    'ws://' + window.location.host + '/ws/gui/'
-    // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
+    // 'ws://' + window.location.host + '/ws/gui/'
+    'ws://' + "127.0.0.1:8001" + '/ws/gui/'
 );
 
 socket.onmessage = function(e) {

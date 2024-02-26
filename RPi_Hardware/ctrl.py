@@ -10,6 +10,7 @@ import oled
 from pvlib import atmosphere
 import zmq
 import time
+import position
 
 class Ctrl:
 
@@ -22,6 +23,7 @@ class Ctrl:
 
     def __init__(self):
         self.antennaConnection = deviceManager.antenna
+        self.hc12Connection = deviceManager.hc12
         self.dataQueue = queue.Queue()
         self.cmdQueue = queue.Queue()
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
@@ -30,15 +32,15 @@ class Ctrl:
         self.mobile_alt_relative = None
         self.base_alt_relative = None
         self.calibratedVerticalDiff = self.loadCalibrationValue()
+        self.manual_antenna_ctrl = False
 
+    def begin(self):
         threading.Thread(target=self.getIpAddr).start()
         dataBroadcastThread = threading.Thread(target=self.data.broadcast)
         commandRecvThread = threading.Thread(target=self.cmdListen)
-
         zmqContext = zmq.Context()
         self.receiver = zmqContext.socket(zmq.PULL)
         self.receiver.bind("tcp://127.0.0.1:5556")
-
         commandRecvThread.daemon = True
         commandRecvThread.start()
         dataBroadcastThread.daemon = True
@@ -86,9 +88,7 @@ class Ctrl:
             planarDistance = nmeahelpers.planar(posFrom[0], posFrom[1], posTo[0], posTo[1])
         except TypeError:
             return None
-        # print("pd " + str(planarDistance))
         verticalDistance = self.getVerticalDistance()
-        # print("vd " + str(verticalDistance))
         elevation = math.atan(verticalDistance / planarDistance)
         return math.degrees(elevation)
 
@@ -115,6 +115,10 @@ class Ctrl:
                 device.send("E" + el + "\n")
 
 
+    def homeAntenna(self):
+        self.antennaConnection.getSerialDevice().send("H1")
+
+
     def hasPositions(self):
         return self.mobile_pos is not None and self.base_pos is not None
     
@@ -124,20 +128,18 @@ class Ctrl:
 
 
     def updateAntennaAzimuth(self):
-        if self.hasPositions():
+        if self.hasPositions() and not self.manual_antenna_ctrl:
             bearing = self.getBearing(self.base_pos, self.mobile_pos)
             self.moveAntenna(az = bearing)
     
 
     def updateAntennaElevation(self):
-        if self.hasPositions() and self.hasElevations():
+        if self.hasPositions() and self.hasElevations() and not self.manual_antenna_ctrl:
             elevation = self.getElevation(self.base_pos, self.mobile_pos)
             self.moveAntenna(el = elevation)
 
 
     def newData(self, data : Tuple[str, Any]):
-        # print(data[0] + " : " + str(data[1]))
-
         if data[0] == "base_gps_pos":
             self.base_pos = (data[1]["lat"], data[1]["lon"])
             self.printPos(self.base_pos, 1)
@@ -149,15 +151,11 @@ class Ctrl:
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.base_alt_relative = self.altFromPressure(pressure)
-            # print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
-            # print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
         elif data[0] == "mobile_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.mobile_alt_relative = self.altFromPressure(pressure)
-            # print("Base: " + str(self.base_alt_relative) + " Mobile: " + str(self.mobile_alt_relative))
-            # print("Diff: " + str(self.getVerticalDistance()))
             self.updateAntennaElevation()
 
 
@@ -183,13 +181,21 @@ class Ctrl:
                 
 
     def runCmd(self, cmd):
-        print(cmd)
         if "cal" in cmd:
             self.calibrateVerticalDistance()
-        elif "azimuth" in cmd:
+        elif "antenna_home" in cmd:
+            self.homeAntenna()
+        elif "antenna_ctrl" in cmd:
+            if cmd["antenna_ctrl"] == "man":
+                self.manual_antenna_ctrl = True
+            else:
+                self.manual_antenna_ctrl = False
+        elif "azimuth" in cmd and self.manual_antenna_ctrl:
             self.moveAntenna(az = cmd["azimuth"])
-        elif "elevation" in cmd:
+        elif "elevation" in cmd and self.manual_antenna_ctrl:
             self.moveAntenna(el = cmd["elevation"])
+        elif "transmit" in cmd:
+            self.hc12Connection.getSerialDevice().send(cmd["transmit"])
 
 
     def getIpAddr(self):
@@ -204,4 +210,8 @@ class Ctrl:
                 pass
         oled.print_text(addr, 0, 127)
 
-Ctrl()
+
+
+if __name__ == '__main__':
+    control = Ctrl()
+    control.begin()

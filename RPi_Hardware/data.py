@@ -132,8 +132,3 @@ class Data:
         else:          
             if identity == filter and nmeaMessage.lat is not None and nmeaMessage.lon is not None:
                 return nmeaMessage
-
-
-# data = Data()
-
-# data.broadcast()
