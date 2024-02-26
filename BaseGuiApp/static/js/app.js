@@ -12,8 +12,8 @@ $(document).ready(function() {
 
 
 const socket = new WebSocket(
-    'ws://' + window.location.host + '/ws/gui/'
-    // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
+    // 'ws://' + window.location.host + '/ws/gui/'
+    'ws://' + "127.0.0.1:8001" + '/ws/gui/'
 );
 
 socket.onmessage = function(e) {
@@ -59,7 +59,7 @@ function elevationUpdate(value) {
 }
 
 $("#azimuth-slider").roundSlider({
-    radius: 85,
+    radius: 60,
     handleSize: "34,10",
     sliderType: "default",
     value: 0,
@@ -169,13 +169,13 @@ function dataReceived(data) {
     if (data["antenna_azimuth"]) {
         move_degrees = data["antenna_azimuth"] - antenna_current_bearing;
         antenna_top_image.css("transform", "rotate(" + move_degrees + "deg)");
-        antenna_azimuth_value.html(data["antenna_azimuth"]);
+        antenna_azimuth_value.html("Bearing: " + data["antenna_azimuth"] + "°");
     }
 
     if (data["antenna_elevation"]) {
         move_degrees = data["antenna_elevation"] - antenna_current_elevation;
         antenna_side_image.css("transform", "rotate(" + move_degrees + "deg)");
-        antenna_elevation_value.html(data["antenna_elevation"]);
+        antenna_elevation_value.html("Elevation: " + data["antenna_elevation"] + "°");
     }
 
     if (data["mobile_gps_pos"]) {
@@ -224,16 +224,16 @@ $("#manualOverride").change(function() {
         socket.send(JSON.stringify({
             "antenna_ctrl" : "man"
         }));
-        $("#azimuth-slider").show(500);
-        $("#elevation-slider").show(500);
+        $("#azimuth-slider-wrapper").show(500);
+        $("#elevation-slider-wrapper").show(500);
         $("label[for='manualOverride']").html("Manual");
     }
     else {
         socket.send(JSON.stringify({
             "antenna_ctrl" : "auto"
         }));
-        $("#azimuth-slider").hide(500);
-        $("#elevation-slider").hide(500);
+        $("#azimuth-slider-wrapper").hide(500);
+        $("#elevation-slider-wrapper").hide(500);
         $("label[for='manualOverride']").html("Auto");
     }
 });

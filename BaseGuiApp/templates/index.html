@@ -29,7 +29,7 @@
                         </form>
                     </div>
                 </div>
-                <div class="card control-interface-card">
+                <div id="base-control-card" class="card control-interface-card">
                     <div class="card-header d-flex flex-row justify-content-between">
                         <span>Antenna Control</span>
                         <div class="form-check form-switch">
@@ -37,18 +37,28 @@
                             <label class="form-check-label" for="manualOverride">Auto</label>
                         </div>
                     </div>
-                    <div class="card-body d-flex flex-row overflow-hidden">
-                        <div id="elevation-slider" style="display:none;"></div>
-                        <div class="m-auto">
-                            <img id="antenna-side-image" src="../static/images/outdoor-antenna.png">
-                            <div id="antenna-elevation-value"></div>
+                    <div class="card-body d-flex flex-row overflow-hidden p-1">
+                        <div id="elevation-slider-wrapper" style="display:none;">
+                            <div id="elevation-slider"></div>
+                        </div>
+                        <div class="m-auto" style="padding: 0 10px;">
+                            <span id="antenna-side">
+                                <img id="antenna-side-base-image" src="../static/images/antenna_base_side.png">
+                                <img id="antenna-side-image" src="../static/images/antenna_side.png"> 
+                            </span>
+                            <div id="antenna-elevation-value" class="text-center"></div>
                         </div>
                     </div>
-                    <div class="card-body d-flex flex-row">
-                        <div id="azimuth-slider" style="display:none;"></div>
+                    <div class="card-body d-flex flex-row p-1">
+                        <div id="azimuth-slider-wrapper" style="display:none;">
+                            <div id="azimuth-slider"></div>
+                        </div>
                         <div class="m-auto">
-                            <img id="antenna-top-image" src="../static/images/outdoor-antenna.png">
-                            <div id="antenna-azimuth-value"></div>
+                            <span id="antenna-top">
+                                <img id="antenna-compass-image" src="../static/images/compass.png">
+                                <img id="antenna-top-image" src="../static/images/antenna_top.png"> 
+                            </span>
+                            <div id="antenna-azimuth-value" class="text-center"></div>
                         </div>
                     </div>
                 </div>

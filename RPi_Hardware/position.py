@@ -49,18 +49,21 @@ class Position:
     
 
     def getAverage(self):
-        lat = 0
-        lon = 0
-        count = 0
-        for coord in self.coordinate_history:
-            lat += coord[0]
-            lon += coord[1]
-            count += 1
-        if count == 0:
+        try:
+            lat = 0
+            lon = 0
+            count = 0
+            for coord in self.coordinate_history:
+                lat += coord[0]
+                lon += coord[1]
+                count += 1
+            if count == 0:
+                return None
+            lat /= count
+            lon /= count
+            return (lat,lon)
+        except:
             return None
-        lat /= count
-        lon /= count
-        return (lat,lon)
     
 
     def getCoordinate(self):

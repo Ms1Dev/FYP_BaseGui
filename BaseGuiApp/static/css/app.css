@@ -10,6 +10,10 @@
     flex: 1;
 }
 
+#base-control-card {
+    min-width: 390px !important;
+}
+
 .dropdown-menu > li:hover > .nested-dropdown {
     display: block;
 }
@@ -23,4 +27,74 @@
 
 label[for='manualOverride'] {
     min-width: 60px;
+}
+
+
+#elevation-slider-wrapper {
+    overflow: hidden;
+    padding-left: 10px;
+    max-width: 130px;
+}
+
+#elevation-slider {
+    margin-left: 15px;
+}
+
+#elevation-slider .rs-tooltip  {
+    left: 35%;
+}
+
+#azimuth-slider {
+    margin-left: 10px;
+}
+
+#azimuth-slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 20px;
+    padding-right: 5px;
+}
+
+#antenna-side {
+    position: relative;
+    height: 130px;
+    width: 200px;
+    display: block;
+}
+
+#antenna-side-base-image {
+    width: 120px;
+    position: absolute;
+    left: 42px;
+    top: 30px;
+}
+
+#antenna-side-image {
+    width: 200px;
+    position: absolute;
+}
+
+
+#antenna-top {
+    position: relative;
+    height: 220px;
+    width: 220px;
+    display: block;
+}
+
+#antenna-compass-image {
+    width: 220px;
+    position: absolute;
+}
+
+#antenna-top-image {
+    width: 120px;
+    position: absolute;
+    top: 48px;
+    left: 51px;
+}
+
+.container {
+    max-width: 1450px !important;
 }
