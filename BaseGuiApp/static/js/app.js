@@ -98,11 +98,14 @@ $("#elevation-slider").roundSlider({
 
 var base_marker = null;
 var mobile_marker = null;
+let base_marker_no_update = false;
 
 let base_coords_input = $("#base-coordinates");
+let base_alt_input = $("#base-altitude");
 let base_temperature_input = $("#base-temperature");
 
 let mobile_coords_input = $("#mobile-coordinates");
+let mobile_alt_input = $("#mobile-altitude");
 let mobile_temperature_input = $("#mobile-temperature");
 
 let antenna_side_image = $("#antenna-side-image");
@@ -141,7 +144,7 @@ function dataReceived(data) {
             base_marker = new L.Marker([lat, lon], {icon: base_marker_icon});
             base_marker.addTo(map);
         }
-        else {
+        else if (!base_marker_no_update) {
             base_marker.setLatLng([lat, lon]);
         }
         if (!jumped_to_location) {
@@ -149,6 +152,14 @@ function dataReceived(data) {
             map.panTo(new L.LatLng(lat, lon));
         }
         base_coords_input.val(lat.toFixed(7) + ", " + lon.toFixed(7));
+    }
+
+    if (data["base_gps_pos"]) {
+        let altitude = data["base_gps_pos"]["alt"];
+        base_alt_input.val(altitude);
+        if (data["alt_diff"]) {
+            mobile_alt_input.val((altitude + data["alt_diff"]).toFixed(1));
+        }
     }
 
     if (data["base_temperature"]) {
@@ -215,6 +226,7 @@ $("#manualOverride").change(function() {
         }));
         $("#azimuth-slider").show(500);
         $("#elevation-slider").show(500);
+        $("label[for='manualOverride']").html("Manual");
     }
     else {
         socket.send(JSON.stringify({
@@ -222,6 +234,7 @@ $("#manualOverride").change(function() {
         }));
         $("#azimuth-slider").hide(500);
         $("#elevation-slider").hide(500);
+        $("label[for='manualOverride']").html("Auto");
     }
 });
 
@@ -249,6 +262,7 @@ $("#base-pos-mode-avg").on("click", function() {
     if (base_marker) {
         base_marker.dragging.disable();
     }
+    base_marker_no_update = false; 
 });
 
 
@@ -261,6 +275,7 @@ $("#base-pos-mode-live").on("click", function() {
     if (base_marker) {
         base_marker.dragging.disable();
     }
+    base_marker_no_update = false; 
 });
 
 
@@ -273,6 +288,7 @@ $("#base-pos-mode-lock").on("click", function() {
     if (base_marker) {
         base_marker.dragging.disable();
     }
+    base_marker_no_update = false; 
 });
 
 
@@ -287,7 +303,6 @@ $("#base-pos-mode-man").on("click", function() {
         base_marker.dragging.enable();
         base_marker.on("dragend", function(event) {
             let latlng = event.target.getLatLng();
-            console.log(latlng);
             socket.send(JSON.stringify({
                 "antenna_pos" : {
                     "mode" : "fixed",
@@ -295,6 +310,7 @@ $("#base-pos-mode-man").on("click", function() {
                 }
             }));
         });
+        base_marker_no_update = true;    
     }
 });
 

@@ -32,6 +32,7 @@ class Ctrl:
         self.mobile_pos.setSampleSize(1)
         self.mobile_pos.liveLocation()
         self.mobile_alt_relative = None
+        self.alt_diff = 0
         self.base_alt_relative = None
         self.calibratedVerticalDiff = self.loadCalibrationValue()
         self.manual_antenna_ctrl = False
@@ -148,6 +149,8 @@ class Ctrl:
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
             self.mobile_alt_relative = self.altFromPressure(pressure)
+            self.alt_diff = self.getVerticalDistance()
+            self.data.data["alt_diff"] = self.alt_diff
             self.updateAntennaElevation()
 
 

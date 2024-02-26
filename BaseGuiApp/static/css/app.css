@@ -1,8 +1,8 @@
 
 
 #map { 
-    width: 25vw;
-    height: 80vh;
+    width: 30vw;
+    min-height: 80vh;
 }
 
 
@@ -19,4 +19,8 @@
     position: absolute;
     right: 99%;
     top: 70px;
+}
+
+label[for='manualOverride'] {
+    min-width: 60px;
 }
