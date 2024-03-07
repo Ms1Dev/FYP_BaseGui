@@ -11,6 +11,7 @@ from pvlib import atmosphere
 import zmq
 import time
 from position import Position
+import interface
 
 class Ctrl:
 

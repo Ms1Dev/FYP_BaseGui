@@ -1,7 +1,7 @@
-from django.urls import re_path
+from django.urls import path
 
 from BaseGuiApp.consumers import GuiConsumer
 
 urlpatterns = [
-    re_path(r"ws/gui/$", GuiConsumer.as_asgi(), name="gui"),
+    path("ws/gui/", GuiConsumer.as_asgi(), name="gui"),
 ]

@@ -12,8 +12,8 @@ $(document).ready(function() {
 
 
 const socket = new WebSocket(
-    // 'ws://' + window.location.host + '/ws/gui/'
-    'ws://' + "127.0.0.1:8001" + '/ws/gui/'
+    'ws://' + window.location.host + '/ws/gui/'
+    // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
 );
 
 socket.onmessage = function(e) {
@@ -136,7 +136,6 @@ var base_marker_icon = new L.Icon({
   });
 
 function dataReceived(data) {
-    console.log(data);
     if (data["base_ctrl_coord"]) {
         let lat = data["base_ctrl_coord"][0];
         let lon = data["base_ctrl_coord"][1];

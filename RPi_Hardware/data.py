@@ -10,6 +10,8 @@ import queue
 class Data:
     pressureUnits = "mb"
     temperatureUnits = "°C"
+    mobileNmeaSentenceType = "GNGGA"
+    baseNmeaSentenceType = "GPGGA"
 
     class Connection(threading.Thread):
         def __init__(self, connectedDevice : deviceManager.ConnectedDevice, recvCallback):
@@ -84,13 +86,13 @@ class Data:
             value = dataStr[2:]
             self.addToData("mobile_temperature", value + self.temperatureUnits)
         else:
-            message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''))
+            message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''), self.mobileNmeaSentenceType)
             if message is not None:
                 self.addToData("mobile_gps_pos", self.formattedCoords(message))
 
 
     def receiveGps(self, data):
-        message : NMEAMessage = self.filterGpsSentence(data)
+        message : NMEAMessage = self.filterGpsSentence(data, self.baseNmeaSentenceType)
         if message is not None:
             self.addToData("base_gps_pos", self.formattedCoords(message))
         
@@ -135,7 +137,7 @@ class Data:
         return {"lat" : nmeamessage.lat, "lon" : nmeamessage.lon, "alt" : nmeamessage.alt}
 
 
-    def filterGpsSentence(self, line : str, filter = "GPGGA"):
+    def filterGpsSentence(self, line : str, filter):
         try:
             nmeaMessage = NMEAReader.parse(line)
             identity = nmeaMessage.identity
