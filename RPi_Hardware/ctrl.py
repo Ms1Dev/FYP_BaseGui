@@ -11,7 +11,7 @@ from pvlib import atmosphere
 import zmq
 import time
 from position import Position
-import interface
+from interface import Interface
 
 class Ctrl:
 
@@ -23,6 +23,8 @@ class Ctrl:
     ]
 
     def __init__(self):
+
+        self.interface = Interface()
         self.antennaConnection = deviceManager.antenna
         self.hc12Connection = deviceManager.hc12
         self.dataQueue = queue.Queue()
@@ -40,9 +42,9 @@ class Ctrl:
 
 
     def begin(self):
-        threading.Thread(target=self.getIpAddr).start()
         dataBroadcastThread = threading.Thread(target=self.data.broadcast)
         commandRecvThread = threading.Thread(target=self.cmdListen)
+        uiThread = threading.Thread(target=self.interface.begin)
         zmqContext = zmq.Context()
         self.receiver = zmqContext.socket(zmq.PULL)
         self.receiver.bind("tcp://127.0.0.1:5556")
@@ -50,6 +52,8 @@ class Ctrl:
         commandRecvThread.start()
         dataBroadcastThread.daemon = True
         dataBroadcastThread.start()
+        uiThread.daemon = True
+        uiThread.start()
         self.monitor()
 
 
@@ -135,7 +139,7 @@ class Ctrl:
     def newData(self, data : Tuple[str, Any]):
         if data[0] == "base_gps_pos":
             self.base_pos.newData((data[1]["lat"], data[1]["lon"]))
-            self.printPos(self.base_pos.getLatest(), 1)
+            # self.printPos(self.base_pos.getLatest(), 1)
             self.data.data["base_ctrl_coord"] = self.base_pos.getLatest()
             self.updateAntennaAzimuth()
         elif data[0] == "mobile_gps_pos":
@@ -155,11 +159,11 @@ class Ctrl:
             self.updateAntennaElevation()
 
 
-    def printPos(self, pos, row):
-        try:
-            oled.print_text("Base: " + str(round(pos[0], 3)) + " ,  " + str(round(pos[1], 3)), row)
-        except TypeError as e:
-            pass
+    # def printPos(self, pos, row):
+    #     try:
+    #         oled.print_text("Base: " + str(round(pos[0], 3)) + " ,  " + str(round(pos[1], 3)), row)
+    #     except TypeError as e:
+    #         pass
 
 
     def monitor(self):
@@ -177,7 +181,6 @@ class Ctrl:
                 
 
     def runCmd(self, cmd):
-        print(cmd)
         if "cal" in cmd:
             self.calibrateVerticalDistance()
         elif "antenna_home" in cmd:
@@ -217,20 +220,6 @@ class Ctrl:
                 self.base_pos.fixLocation(position)
             elif command["mode"] == "live":
                 self.base_pos.liveLocation()
-        
-
-    def getIpAddr(self):
-        addr = None
-        while addr is None:
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                sock.connect(("8.8.8.8", 80))
-                addr = sock.getsockname()[0]
-                sock.close()
-            except Exception:
-                pass
-        oled.print_text(addr, 0, 127)
-
 
 
 if __name__ == '__main__':

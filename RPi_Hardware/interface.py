@@ -1,56 +1,54 @@
 import board
 from Interface.button import Button
-from Interface.screen import Screen
-from Interface.task import Task
+from Interface.submenu import Submenu
+from Interface.process import Process
+from Interface.info import Info
+from Interface import tasks
 import asyncio
-import threading
 import digitalio
 import oled
 
-PIN = board.D26
-led = digitalio.DigitalInOut(PIN)
-led.direction = digitalio.Direction.OUTPUT
-led.value = True
 
 
-screens = Screen("Main menu",[
-    Screen("WiFi mode", [
-        Task("Access Point"),
-        Task("Client")
+submenus = Submenu("Main menu",[
+    Submenu("WiFi mode", [
+        Process("Station", tasks.wifiClientMode),
+        Process("Access Point", tasks.wifiAPMode)
     ]),
-    Task("Test1"),
-    Task("Test2"),
-    Task("Test3"),
-    Task("Test4")
+    Info("Connection details", tasks.getConnectionInfo)
 ])
 
 
 class Interface:
 
     def __init__(self) -> None:
-        self.root_screen = screens
+        PIN = board.D26
+        led = digitalio.DigitalInOut(PIN)
+        led.direction = digitalio.Direction.OUTPUT
+        led.value = True
+
+        self.root_submenu = submenus
         self.leftButton = Button(board.D5)
         self.midButton = Button(board.D6)
         self.rightButton = Button(board.D16)
-        self.leftButton.setPrimaryAction(self.root_screen.leftBtnPressed)
-        self.midButton.setPrimaryAction(self.root_screen.middleBtnPressed)
-        self.rightButton.setPrimaryAction(self.root_screen.rightBtnPressed)
-        self.leftButton.setSecondaryAction(self.root_screen.leftBtnHeld)
-        self.midButton.setSecondaryAction(self.root_screen.middleBtnHeld)
-        self.rightButton.setSecondaryAction(self.root_screen.rightBtnHeld)
-        self.begin()
+        self.leftButton.setPrimaryAction(self.root_submenu.leftBtnPressed)
+        self.midButton.setPrimaryAction(self.root_submenu.middleBtnPressed)
+        self.rightButton.setPrimaryAction(self.root_submenu.rightBtnPressed)
+        self.leftButton.setSecondaryAction(self.root_submenu.leftBtnHeld)
+        self.midButton.setSecondaryAction(self.root_submenu.middleBtnHeld)
+        self.rightButton.setSecondaryAction(self.root_submenu.rightBtnHeld)
 
 
     async def monitor(self):
         lb_task = asyncio.create_task(self.leftButton.monitorKey())
         mb_task = asyncio.create_task(self.midButton.monitorKey())
         rb_task = asyncio.create_task(self.rightButton.monitorKey())
-        screen_task = asyncio.create_task(self.screenUpdate())
-        await asyncio.gather(lb_task,mb_task,rb_task, screen_task)
+        submenu_task = asyncio.create_task(self.submenuUpdate())
+        await asyncio.gather(lb_task,mb_task,rb_task, submenu_task)
 
-    async def screenUpdate(self):
+    async def submenuUpdate(self):
         while True:
-            oled.rows = self.root_screen.getRows()
+            oled.rows = self.root_submenu.getRows()
             oled.refresh()
             await asyncio.sleep(0.1)
 
@@ -59,6 +57,6 @@ class Interface:
 
 # threading.Thread(target=begin).start()
 
-interface = Interface()
+# interface = Interface()
 
-interface.begin()
+# interface.begin()

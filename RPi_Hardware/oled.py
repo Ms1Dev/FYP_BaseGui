@@ -43,26 +43,29 @@ class Row:
                 outline = 255 - fill
             draw.rectangle((0, startOfRow, WIDTH -1, startOfRow + ROW_HEIGHT), fill=fill, outline=outline)
             draw.text((2, startOfRow), self.text, font=font, fill=textColour)  
-            oled.image(image)  
-            oled.show()  
-
+            
 
 rows : Row = []
-
+top_right = "STA"
 
 def print_rectangle(row):
     with printLock:
         startOfRow = row * ROW_HEIGHT + row
-        draw.rectangle((0, startOfRow, WIDTH -1, startOfRow + ROW_HEIGHT -1), fill=0)
-        oled.image(image)  
-        oled.show()  
+        draw.rectangle((0, startOfRow, WIDTH -1, startOfRow + ROW_HEIGHT), fill=0)
 
+def printTopRight():
+    draw.rectangle((WIDTH -25, 0, WIDTH -1, ROW_HEIGHT), fill=255, outline=0)
+    draw.text((WIDTH -23, 0), top_right, font=font, fill=0)   
 
 def refresh():
     row_count = len(rows)
     for i in range(0, ROWS):
         if i < row_count:
             rows[i].print(i)
+            if i == 0:
+                printTopRight()
         else:
-            print_rectangle(i)
-
+            print_rectangle(i)   
+    oled.image(image)  
+    oled.show()  
+    
