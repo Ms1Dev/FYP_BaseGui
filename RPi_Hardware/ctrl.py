@@ -42,7 +42,7 @@ class Ctrl:
 
 
     def begin(self):
-        dataBroadcastThread = threading.Thread(target=self.data.broadcast)
+        # dataBroadcastThread = threading.Thread(target=self.data.broadcast)
         commandRecvThread = threading.Thread(target=self.cmdListen)
         uiThread = threading.Thread(target=self.interface.begin)
         zmqContext = zmq.Context()
@@ -50,8 +50,8 @@ class Ctrl:
         self.receiver.bind("tcp://127.0.0.1:5556")
         commandRecvThread.daemon = True
         commandRecvThread.start()
-        dataBroadcastThread.daemon = True
-        dataBroadcastThread.start()
+        # dataBroadcastThread.daemon = True
+        # dataBroadcastThread.start()
         uiThread.daemon = True
         uiThread.start()
         self.monitor()
@@ -140,7 +140,8 @@ class Ctrl:
         if data[0] == "base_gps_pos":
             self.base_pos.newData((data[1]["lat"], data[1]["lon"]))
             # self.printPos(self.base_pos.getLatest(), 1)
-            self.data.data["base_ctrl_coord"] = self.base_pos.getLatest()
+            # self.data.data["base_ctrl_coord"] = self.base_pos.getLatest()
+            self.data.addToData("base_ctrl_coord", self.base_pos.getLatest())
             self.updateAntennaAzimuth()
         elif data[0] == "mobile_gps_pos":
             self.mobile_pos.newData((data[1]["lat"], data[1]["lon"]))
@@ -155,7 +156,8 @@ class Ctrl:
             pressure = data[1][:unitsIndex]
             self.mobile_alt_relative = self.altFromPressure(pressure)
             self.alt_diff = self.getVerticalDistance()
-            self.data.data["alt_diff"] = self.alt_diff
+            self.data.addToData("alt_diff",self.alt_diff)
+            # self.data.data["alt_diff"] = self.alt_diff
             self.updateAntennaElevation()
 
 

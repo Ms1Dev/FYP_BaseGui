@@ -69,7 +69,7 @@ liveInfoListeners = {
 def liveInfo():
     zmqContext = zmq.Context()
     receiver = zmqContext.socket(zmq.PULL)
-    receiver.connect("tcp://127.0.0.1:5555")
+    receiver.connect("tcp://127.0.0.1:5557")
 
     while True:
         cmd = json.loads(receiver.recv_json())

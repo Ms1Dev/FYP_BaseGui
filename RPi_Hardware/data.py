@@ -46,6 +46,11 @@ class Data:
 
 
     def __init__(self, ctrlDataQueue = None, ctrlPointsOfInterest = []):
+        zmqContext = zmq.Context()
+        self.messageSender = zmqContext.socket(zmq.PUSH)
+        self.messageSender.bind("tcp://127.0.0.1:5557")
+        self.messageSender.set_hwm(1000)
+
         self.connections = {
             "hc12"      : Data.Connection(deviceManager.hc12, self.receiveHc12),
             "gps"       : Data.Connection(deviceManager.gps, self.receiveGps),
@@ -53,18 +58,19 @@ class Data:
             "antenna"   : Data.Connection(deviceManager.antenna, self.receiveAnt)
         }
         self.data = {}
+        self.prevData = {}
         self.ctrlDataQueue = ctrlDataQueue
         self.ctrlPointsOfInterest = ctrlPointsOfInterest
+        
+
+    def testRecv(self):
+        while True:
+            print(self.receiver.recv_json())
     
 
-    def broadcast(self):
-        zmqContext = zmq.Context()
-        self.messageSender = zmqContext.socket(zmq.PUSH)
-        self.messageSender.bind("tcp://127.0.0.1:5555")
-        while True:
-            dataJson = json.dumps(self.data)
-            self.messageSender.send_json(dataJson)
-            time.sleep(1)
+    def broadcast(self, data):
+        dataJson = json.dumps(data)
+        self.messageSender.send_json(dataJson)
 
 
     def send(self, json):
@@ -121,7 +127,10 @@ class Data:
     
 
     def addToData(self, label, value):
-        self.data[label] = value
+        if self.prevData.get(label) == value:
+            return
+        self.broadcast({label:value})
+        self.prevData[label] = value
         if label in self.ctrlPointsOfInterest:
             self.forwardDataToCtrl((label,value))
 

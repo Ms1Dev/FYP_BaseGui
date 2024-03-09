@@ -11,7 +11,7 @@ class GuiConsumer(AsyncWebsocketConsumer):
         zmqContext = zmq.Context()
 
         self.receiver = zmqContext.socket(zmq.PULL)
-        self.receiver.connect("tcp://127.0.0.1:5555")
+        self.receiver.connect("tcp://127.0.0.1:5557")
 
         self.sender = zmqContext.socket(zmq.PUSH)
         self.sender.connect("tcp://127.0.0.1:5556")
@@ -33,4 +33,4 @@ class GuiConsumer(AsyncWebsocketConsumer):
         while True:
             data = self.receiver.recv_json()
             await self.send(data)
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
