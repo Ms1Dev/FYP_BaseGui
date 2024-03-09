@@ -59,7 +59,7 @@ class Interface:
         mb_task = asyncio.create_task(self.midButton.monitorKey())
         rb_task = asyncio.create_task(self.rightButton.monitorKey())
         submenu_task = asyncio.create_task(self.submenuUpdate())
-        await asyncio.gather(lb_task,mb_task,rb_task, submenu_task)
+        await asyncio.gather(lb_task,mb_task,rb_task,submenu_task)
 
     async def submenuUpdate(self):
         while True:

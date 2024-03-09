@@ -23,7 +23,7 @@ class Button:
                         self.pressed()
                     elif event.released:
                         await self.released()
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.1)
 
 
     def pressed(self):
