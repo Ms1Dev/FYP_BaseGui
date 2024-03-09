@@ -24,7 +24,7 @@ class Ctrl:
 
     def __init__(self):
 
-        self.interface = Interface()
+        self.interface = Interface(self)
         self.antennaConnection = deviceManager.antenna
         self.hc12Connection = deviceManager.hc12
         self.dataQueue = queue.Queue()
@@ -222,6 +222,7 @@ class Ctrl:
                 self.base_pos.liveLocation()
 
 
+control = Ctrl()
+
 if __name__ == '__main__':
-    control = Ctrl()
     control.begin()

@@ -18,3 +18,12 @@ class Info(Submenu):
         rows = [Row(self.label, filled=True)]
         rows.extend([Row(row) for row in self.rows])
         return rows
+    
+
+class LiveInfo(Info):
+    def __init__(self, label : str, rows):
+        super().__init__(label, None)
+        self.rows = rows
+
+    def selected(self):
+        return self

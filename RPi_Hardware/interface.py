@@ -2,32 +2,47 @@ import board
 from Interface.button import Button
 from Interface.submenu import Submenu
 from Interface.process import Process
-from Interface.info import Info
+from Interface.info import Info, LiveInfo
 from Interface import tasks
 import asyncio
 import digitalio
 import oled
 
 
-
-submenus = Submenu("Main menu",[
-    Submenu("WiFi mode", [
-        Process("Station", tasks.wifiClientMode),
-        Process("Access Point", tasks.wifiAPMode)
-    ]),
-    Info("Connection details", tasks.getConnectionInfo)
-])
+# submenus = Submenu("Main menu",[
+#     Submenu("WiFi mode", [
+#         Process("Station", tasks.wifiClientMode),
+#         Process("Access Point", tasks.wifiAPMode)
+#     ]),
+#     Info("Connection details", tasks.getConnectionInfo),
+#     Process("Calibrate height", ctrl.control.calibrateVerticalDistance),
+#     LiveInfo("Base Location", tasks.base_pos),
+#     LiveInfo("Antenna Pos", tasks.antenna_pos)
+# ])
 
 
 class Interface:
 
-    def __init__(self) -> None:
+    def __init__(self, control) -> None:
+        self.control = control
+
+
         PIN = board.D26
         led = digitalio.DigitalInOut(PIN)
         led.direction = digitalio.Direction.OUTPUT
         led.value = True
 
-        self.root_submenu = submenus
+        self.root_submenu = Submenu("Main menu",[
+            Submenu("WiFi mode", [
+                Process("Station", tasks.wifiClientMode),
+                Process("Access Point", tasks.wifiAPMode)
+            ]),
+            Info("Connection details", tasks.getConnectionInfo),
+            Process("Calibrate height", self.control.calibrateVerticalDistance),
+            LiveInfo("Base Location", tasks.base_pos),
+            LiveInfo("Antenna Pos", tasks.antenna_pos)
+        ])
+
         self.leftButton = Button(board.D5)
         self.midButton = Button(board.D6)
         self.rightButton = Button(board.D16)
@@ -54,9 +69,3 @@ class Interface:
 
     def begin(self):
         asyncio.run(self.monitor())
-
-# threading.Thread(target=begin).start()
-
-# interface = Interface()
-
-# interface.begin()

@@ -1,7 +1,9 @@
 import subprocess
 import oled
 import netifaces
-
+import zmq
+import threading
+import json
 
 def wifiClientMode():
     result = subprocess.run("/home/michael-zwann/pidjango/ShellScripts/client_mode.sh", shell=True, capture_output=True, text=True, timeout=10)
@@ -32,3 +34,49 @@ def getConnectionInfo():
     except:
         pass
     return rows
+
+
+
+############# Live Info ##################
+
+base_pos = []
+antenna_pos = [0,0]
+
+def _observeBasePos(data):
+    global base_pos
+    base_pos.clear()
+    base_pos.append("Lat: " + str(data["lat"]))
+    base_pos.append("Lon: " + str(data["lon"]))
+    base_pos.append("Alt: " + str(data["alt"]))
+
+
+def _observeAntennaPosAz(data):
+    global antenna_pos
+    antenna_pos[0] = "AZ: " + str(data) + "°"
+
+def _observeAntennaPosEl(data):
+    global antenna_pos
+    antenna_pos[1] = "EL: " + str(data) + "°"
+
+
+liveInfoListeners = {
+    "base_gps_pos" : _observeBasePos,
+    "antenna_azimuth" : _observeAntennaPosAz,
+    "antenna_elevation" : _observeAntennaPosEl
+}
+
+
+def liveInfo():
+    zmqContext = zmq.Context()
+    receiver = zmqContext.socket(zmq.PULL)
+    receiver.connect("tcp://127.0.0.1:5555")
+
+    while True:
+        cmd = json.loads(receiver.recv_json())
+        for parameter, method in liveInfoListeners.items():
+            if parameter in cmd:
+                method(cmd.get(parameter))
+            
+liveInfoThread = threading.Thread(target=liveInfo)
+liveInfoThread.daemon = True
+liveInfoThread.start()
