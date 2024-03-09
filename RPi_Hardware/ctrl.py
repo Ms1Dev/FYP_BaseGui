@@ -11,6 +11,7 @@ from pvlib import atmosphere
 import zmq
 import time
 from position import Position
+from altitude import Altitude
 from interface import Interface
 
 class Ctrl:
@@ -32,6 +33,8 @@ class Ctrl:
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
         self.base_pos = Position()
         self.mobile_pos = Position()
+        self.mobile_alt = Altitude("live")
+        self.base_alt = Altitude("avg")
         self.mobile_pos.setSampleSize(1)
         self.mobile_pos.liveLocation()
         self.mobile_alt_relative = None
@@ -42,7 +45,6 @@ class Ctrl:
 
 
     def begin(self):
-        # dataBroadcastThread = threading.Thread(target=self.data.broadcast)
         commandRecvThread = threading.Thread(target=self.cmdListen)
         uiThread = threading.Thread(target=self.interface.begin)
         zmqContext = zmq.Context()
@@ -50,8 +52,6 @@ class Ctrl:
         self.receiver.bind("tcp://127.0.0.1:5556")
         commandRecvThread.daemon = True
         commandRecvThread.start()
-        # dataBroadcastThread.daemon = True
-        # dataBroadcastThread.start()
         uiThread.daemon = True
         uiThread.start()
         self.monitor()
@@ -77,31 +77,20 @@ class Ctrl:
                 calibrationValue.write(str(value))
         except Exception:
             pass  
-        
 
-    def altFromPressure(self, pressure):
-        pressure = float(pressure)
-        pressure = pressure * 100 # convert to pa
-        return atmosphere.pres2alt(pressure)
-    
 
     def getElevation(self):
         horizontal_distance = self.base_pos.getDistanceTo(self.mobile_pos)
         if horizontal_distance:
-            vertical_distance = self.getVerticalDistance()
+            vertical_distance = self.mobile_alt.getVerticalDistance(self.base_alt, self.calibratedVerticalDiff)
             elevation = math.atan(vertical_distance / horizontal_distance)
             return math.degrees(elevation)
         return None
 
 
-    def getVerticalDistance(self):
-        if self.hasElevations():
-            return self.mobile_alt_relative - self.base_alt_relative - self.calibratedVerticalDiff
-    
-
     def calibrateVerticalDistance(self):
-        if self.hasElevations():
-            self.calibratedVerticalDiff = self.mobile_alt_relative - self.base_alt_relative
+        self.calibratedVerticalDiff = self.mobile_alt.getVerticalDistance(self.base_alt)
+        if self.calibratedVerticalDiff:
             self.storeCalibrationValue(self.calibratedVerticalDiff)
 
 
@@ -115,13 +104,8 @@ class Ctrl:
                 el = str(math.trunc(el))
                 device.send("E" + el + "\n")
 
-
     def homeAntenna(self):
         self.antennaConnection.getSerialDevice().send("H1\n")
-
-    
-    def hasElevations(self):
-        return self.mobile_alt_relative is not None and self.base_alt_relative is not None
 
 
     def updateAntennaAzimuth(self):
@@ -131,16 +115,14 @@ class Ctrl:
     
 
     def updateAntennaElevation(self):
-        if self.hasElevations() and not self.manual_antenna_ctrl:
-            elevation = self.getElevation()
+        elevation = self.getElevation()
+        if elevation is not None and not self.manual_antenna_ctrl:
             self.moveAntenna(el = elevation)
 
 
     def newData(self, data : Tuple[str, Any]):
         if data[0] == "base_gps_pos":
             self.base_pos.newData((data[1]["lat"], data[1]["lon"]))
-            # self.printPos(self.base_pos.getLatest(), 1)
-            # self.data.data["base_ctrl_coord"] = self.base_pos.getLatest()
             self.data.addToData("base_ctrl_coord", self.base_pos.getLatest())
             self.updateAntennaAzimuth()
         elif data[0] == "mobile_gps_pos":
@@ -149,23 +131,15 @@ class Ctrl:
         elif data[0] == "base_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
-            self.base_alt_relative = self.altFromPressure(pressure)
+            self.base_alt.newData(pressure)
             self.updateAntennaElevation()
         elif data[0] == "mobile_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
-            self.mobile_alt_relative = self.altFromPressure(pressure)
-            self.alt_diff = self.getVerticalDistance()
+            self.mobile_alt.newData(pressure)
+            self.alt_diff = self.mobile_alt.getVerticalDistance(self.base_alt, self.calibratedVerticalDiff)
             self.data.addToData("alt_diff",self.alt_diff)
-            # self.data.data["alt_diff"] = self.alt_diff
             self.updateAntennaElevation()
-
-
-    # def printPos(self, pos, row):
-    #     try:
-    #         oled.print_text("Base: " + str(round(pos[0], 3)) + " ,  " + str(round(pos[1], 3)), row)
-    #     except TypeError as e:
-    #         pass
 
 
     def monitor(self):
