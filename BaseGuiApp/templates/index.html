@@ -8,126 +8,118 @@
 <p id="incoming_message"></p>
 
 
-<div class="container d-flex flex-row">
-    <div id="map" class="flex-grow-1"></div>
-    <div id="control-interface" class="d-flex flex-grow-1 flex-column">
-        <div id="antenna-interface" class="border d-flex flex-column flex-grow-1 m-1 rounded">
+<div id="main-display" class="container d-flex flex-row">
+    <div id="antenna-interface" class="card d-flex flex-column m-1 rounded">
+        <div class="border-bottom text-center">
             <h4 class="m-auto p-2">Base</h4>
-            <div class="d-flex flex-row p-2 h-100 gap-2">
-                <div class="card control-interface-card">
-                    <div class="card-header text-center">
-                        Data
-                    </div>
-                    <div class="card-body">
-                        <form>
-                            <label>Coordinates</label>
-                            <input class="form-control" id="base-coordinates">
-                            <label>Temperature</label>
-                            <input class="form-control" id="base-temperature">
-                            <label>Altitude</label>
-                            <input class="form-control" id="base-altitude">
-                        </form>
-                    </div>
-                </div>
-                <div id="base-control-card" class="card control-interface-card">
-                    <div class="card-header d-flex flex-row justify-content-between">
-                        <span>Antenna Control</span>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="manualOverride">
-                            <label class="form-check-label" for="manualOverride">Auto</label>
-                        </div>
-                    </div>
-                    <div class="card-body d-flex flex-row overflow-hidden p-1">
-                        <div id="elevation-slider-wrapper" style="display:none;">
-                            <div id="elevation-slider"></div>
-                        </div>
-                        <div class="m-auto" style="padding: 0 10px;">
-                            <span id="antenna-side">
-                                <img id="antenna-side-base-image" src="../static/images/antenna_base_side.png">
-                                <img id="antenna-side-image" src="../static/images/antenna_side.png"> 
-                            </span>
-                            <div id="antenna-elevation-value" class="text-center"></div>
-                        </div>
-                    </div>
-                    <div class="card-body d-flex flex-row p-1">
-                        <div id="azimuth-slider-wrapper" style="display:none;">
-                            <div id="azimuth-slider"></div>
-                        </div>
-                        <div class="m-auto">
-                            <span id="antenna-top">
-                                <img id="antenna-compass-image" src="../static/images/compass.png">
-                                <img id="antenna-top-image" src="../static/images/antenna_top.png"> 
-                            </span>
-                            <div id="antenna-azimuth-value" class="text-center"></div>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <div class="card-header d-flex flex-row justify-content-between">
+            <span>Antenna Control</span>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="manualOverride">
+                <label class="form-check-label" for="manualOverride">Auto</label>
             </div>
         </div>
-        <div id="device-interface" class="border d-flex flex-column flex-grow-1 m-1 rounded">
-            <h4 class="m-auto p-2">Device</h4>
-            <div class="d-flex flex-row p-2 h-100 gap-2">
-                <div class="card control-interface-card">
-                    <div class="card-header">
-                    Data
-                    </div>
-                    <div class="card-body">
-                        <form>
-                            <label>Coordinates</label>
-                            <input class="form-control" id="mobile-coordinates">
-                            <label>Temperature</label>
-                            <input class="form-control" id="mobile-temperature">
-                            <label>Altitude</label>
-                            <input class="form-control" id="mobile-altitude">
-                        </form>
-                    </div>
-                </div>
-                <div class="card control-interface-card">
-                    <div class="card-header">
-                    Control
-                    </div>
-                    <div class="card-body">
-                        
-                    </div>
-                </div>
+        <div class="card-body d-flex flex-row overflow-hidden p-1">
+            <div id="elevation-slider-wrapper" style="display:none;">
+                <div id="elevation-slider"></div>
             </div>
+            <div class="m-auto" style="padding: 0 10px;">
+                <span id="antenna-side">
+                    <img id="antenna-side-base-image" src="../static/images/antenna_base_side.png">
+                    <img id="antenna-side-image" src="../static/images/antenna_side.png"> 
+                </span>
+                <div id="antenna-elevation-value" class="text-center"></div>
+            </div>
+        </div>
+        <div class="card-body d-flex flex-row p-1">
+            <div id="azimuth-slider-wrapper" style="display:none;">
+                <div id="azimuth-slider"></div>
+            </div>
+            <div class="m-auto">
+                <span id="antenna-top">
+                    <img id="antenna-compass-image" src="../static/images/compass.png">
+                    <img id="antenna-top-image" src="../static/images/antenna_top.png"> 
+                </span>
+                <div id="antenna-azimuth-value" class="text-center"></div>
+            </div>
+        </div>
+        <div class="card-header border-top">
+            Data
+        </div>
+        <div class="card-body">
+            <form>
+                <label>Coordinates</label>
+                <input class="form-control" id="base-coordinates" readonly>
+                <label>Temperature</label>
+                <input class="form-control" id="base-temperature" readonly>
+                <label>Altitude</label>
+                <input class="form-control" id="base-altitude" readonly>
+            </form>
+        </div>
+    </div>
+
+    <div id="map-container">
+        <div class="w-100 rounded" id="map"></div>
+    </div>
+    
+    <div id="device-interface" class="border d-flex flex-column m-1 rounded">
+        <div class="border-bottom text-center">
+            <h4 class="m-auto p-2">Device</h4>    
+        </div>
+        <div class="card-header">
+        Input
+        </div>
+        <div class="card-body d-flex flex-column justify-content-between">
+            <form id="outbound-message-send">
+                <label for="outbound-message">Message device</label>
+                <div class="input-group mb-3">
+                    <textarea class="form-control" id="outbound-message" rows="3"></textarea>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </div>
+            </form>
+            <fieldset class="form-group border d-flex flex-column p-1 rounded">
+                <div class="row mb-1">
+                    <div class="col col-3 m-auto">
+                        <label for="ping-websocket">Server</label>
+                    </div>
+                    <div class="col d-block">
+                        <input class="form-control w-100" id="ping-websocket" readonly>
+                    </div>
+                </div>
+                <div class="row mb-1">
+                    <div class="col col-3 m-auto">
+                        <label for="ping-hc12">Device</label>
+                    </div>
+                    <div class="col d-block">
+                        <input class="form-control w-100" id="ping-hc12" readonly>
+                    </div>
+                </div>
+                <div class="row mb-1">
+                    <div class="col col-3 m-auto">
+                        <label for="ping-total">Total</label>
+                    </div>
+                    <div class="col d-block">
+                        <input class="form-control w-100" id="ping-total" readonly>
+                    </div>
+                </div>
+                <button id="ping-button" class="btn btn-primary">Ping</button>   
+            </fieldset>
+        </div>
+        <div class="card-header border-top">
+            Data
+        </div>
+        <div class="card-body">
+            <form>
+                <label>Coordinates</label>
+                <input class="form-control" id="mobile-coordinates" readonly>
+                <label>Temperature</label>
+                <input class="form-control" id="mobile-temperature" readonly>
+                <label>Altitude Difference</label>
+                <input class="form-control" id="mobile-altitude-difference" readonly>
+            </form>
         </div>
     </div>
 </div>
-
-<!-- <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-<input id="chat-message-input" type="text" size="100"><br>
-<input id="chat-message-submit" type="button" value="Send"> -->
-
-<!-- 
-<script>
-    const socket = new WebSocket(
-        // 'ws://' + window.location.host + '/ws/gui/'
-        'ws://' + "127.0.0.1:8001" + '/ws/gui/'
-    );
-
-    socket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        document.querySelector('#chat-log').value += (data.message + '\n');
-        console.log(data)
-    };
-
-    socket.onclose = function(e) {
-        console.error('Socket closed unexpectedly');
-    };
-
-    socket.onopen = function(e) {
-        socket.send(JSON.stringify({"message":"new"}))
-    }
-
-    document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            socket.send(JSON.stringify({
-                'message': message
-            }));
-            messageInputDom.value = '';
-        };
-</script> -->
 
 {% endblock %}

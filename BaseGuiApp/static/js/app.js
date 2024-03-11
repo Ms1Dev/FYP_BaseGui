@@ -11,6 +11,63 @@ $(document).ready(function() {
 });
 
 
+var ping_sent = 0;
+var ping_timeout;
+const PING_TIMEOUT_MS = 12000;
+
+$("#ping-button").on("click", function(e) {
+    $(this).attr('disabled','disabled');
+    console.log(e.target);
+    $("#ping-websocket").val("");
+    $("#ping-hc12").val("");
+    $("#ping-total").val("");
+    ping_sent = Date.now();
+    socket.send(JSON.stringify({
+        "ping" : ping_sent
+    }));
+
+    ping_timeout = setTimeout(pingTimeout, PING_TIMEOUT_MS);
+});
+
+
+function pingTimeout() {
+    $("#ping-websocket").val("Timeout");
+    $("#ping-hc12").val("Timeout");
+    $("#ping-total").val("Timeout");
+    $("#ping-button").removeAttr('disabled');
+}
+
+
+function pingReceived(internalTime) {
+    clearTimeout([ping_timeout]);
+    let webSentWhen = internalTime[0];
+    let hc12SentWhen = internalTime[1];
+    let hc12RecvWhen = internalTime[2];
+    let webRecvWhen = Date.now();
+    let websocketDiff = 0;
+    let hc12Diff = 0;
+    let total = 0;
+    if (ping_sent > 0) {
+        websocketDiff = Math.trunc(hc12SentWhen - webSentWhen + webRecvWhen - hc12RecvWhen) + " ms";
+        hc12Diff = Math.trunc(hc12RecvWhen - hc12SentWhen) + " ms";
+        total = (webRecvWhen - webSentWhen) + " ms";
+    }
+
+    $("#ping-websocket").val(websocketDiff);
+    
+    if (internalTime[3]) {
+        $("#ping-hc12").val("Timeout");
+    }
+    else {
+        $("#ping-hc12").val(hc12Diff);
+    }
+    
+    $("#ping-total").val(total);
+    $("#ping-button").removeAttr('disabled');
+    ping_sent = 0;
+}
+
+
 const socket = new WebSocket(
     'ws://' + window.location.host + '/ws/gui/'
     // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
@@ -19,6 +76,10 @@ const socket = new WebSocket(
 socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     console.log(data)
+    if (data["ping"]) {
+        pingReceived(data["ping"]);
+        return;
+    }
     dataReceived(data);
 };
 
@@ -106,7 +167,7 @@ let base_alt_input = $("#base-altitude");
 let base_temperature_input = $("#base-temperature");
 
 let mobile_coords_input = $("#mobile-coordinates");
-let mobile_alt_input = $("#mobile-altitude");
+let mobile_alt_diff = $("#mobile-altitude-difference");
 let mobile_temperature_input = $("#mobile-temperature");
 
 let antenna_side_image = $("#antenna-side-image");
@@ -156,10 +217,11 @@ function dataReceived(data) {
 
     if (data["base_gps_pos"]) {
         let altitude = data["base_gps_pos"]["alt"];
-        base_alt_input.val(altitude);
-        if (data["alt_diff"]) {
-            mobile_alt_input.val((altitude + data["alt_diff"]).toFixed(1));
-        }
+        base_alt_input.val(altitude + " m");
+    }
+
+    if (data["alt_diff"]) {
+        mobile_alt_diff.val(data["alt_diff"].toFixed(1) + " m");
     }
 
     if (data["base_temperature"]) {
@@ -201,12 +263,16 @@ function dataReceived(data) {
 function disableControls() {
     $("#options-menu button").attr('disabled', 'disabled');
     $("#manualOverride").attr('disabled', 'disabled');
+    $("#outbound-message-send").find("button").attr('disabled', 'disabled');
+    $("#ping-button").attr('disabled', 'disabled');
 }
 
 
 function enableControls() {
     $("#options-menu button").removeAttr('disabled');
     $("#manualOverride").removeAttr('disabled');
+    $("#outbound-message-send").find("button").removeAttr('disabled');
+    $("#ping-button").removeAttr('disabled');
 }
 
 
@@ -313,4 +379,16 @@ $("#base-pos-mode-man").on("click", function() {
         base_marker_no_update = true;    
     }
 });
+
+
+$("#outbound-message-send").submit(function(e) {
+    e.preventDefault();
+    let textarea = $("#outbound-message");
+    let message = textarea.val();
+    textarea.val("");
+    socket.send(JSON.stringify({
+        "transmit" : message
+    }));
+});
+
 

@@ -47,9 +47,9 @@ class Data:
 
     def __init__(self, ctrlDataQueue = None, ctrlPointsOfInterest = []):
         zmqContext = zmq.Context()
-        self.messageSender = zmqContext.socket(zmq.PUSH)
+        self.messageSender = zmqContext.socket(zmq.PUB)
         self.messageSender.bind("tcp://127.0.0.1:5557")
-        self.messageSender.set_hwm(1000)
+        self.messageSender.set_hwm(10000)
 
         self.connections = {
             "hc12"      : Data.Connection(deviceManager.hc12, self.receiveHc12),
@@ -59,8 +59,14 @@ class Data:
         }
         self.data = {}
         self.prevData = {}
+        self.broadcastTimings = {}
         self.ctrlDataQueue = ctrlDataQueue
         self.ctrlPointsOfInterest = ctrlPointsOfInterest
+        self.liveUpdates = [
+            "antenna_azimuth",
+            "antenna_elevation",
+            "ping"
+        ]
         
 
     def testRecv(self):
@@ -68,22 +74,30 @@ class Data:
             print(self.receiver.recv_json())
     
 
-    def broadcast(self, data):
-        dataJson = json.dumps(data)
-        self.messageSender.send_json(dataJson)
-
-
-    def send(self, json):
-        try:
-            if self.messageSender:
-                self.messageSender.send_json(json)
-            return True
-        except:
-            return False
-        
+    def broadcast(self, label, value, repeat = False):
+        min_time = 0.5
+        if label in self.liveUpdates:
+            min_time = 0
+        if repeat:
+            min_time = 1
+        currentTime = time.time()
+        lastBroadcast = self.broadcastTimings.get(label)
+        if lastBroadcast:
+            if currentTime - lastBroadcast > min_time:
+                self.broadcastTimings[label] = currentTime
+                dataJson = json.dumps({label : value})
+                self.messageSender.send_json(dataJson)
+        else:
+            self.broadcastTimings[label] = currentTime
     
-    def receiveHc12(self, data): 
-        dataStr = data.decode("UTF-8", errors="ignore").strip()   
+    
+    def receiveHc12(self, data):
+        dataStr = data.decode("UTF-8", errors="ignore").strip()
+        try:
+            if dataStr[0] == "␆":
+                self.forwardDataToCtrl(("ping",dataStr[1:4]))
+        except:
+            pass
         dataLabel = dataStr[:2]
         if dataLabel == "P=":
             value = dataStr[2:]
@@ -110,9 +124,6 @@ class Data:
                 self.addToData("base_temperature", data[2:] + self.temperatureUnits)
             elif data[0] == "P":
                 self.addToData("base_pressure", data[2:] + self.pressureUnits)
-        else:
-            self.removeFromData("base_pressure")
-            self.removeFromData("base_temperature")
 
 
     def receiveAnt(self, data):
@@ -127,15 +138,13 @@ class Data:
     
 
     def addToData(self, label, value):
-        if self.prevData.get(label) == value:
-            return
-        self.broadcast({label:value})
+        repeat = self.prevData.get(label) == value
+        self.broadcast(label,value,repeat)
         self.prevData[label] = value
         if label in self.ctrlPointsOfInterest:
             self.forwardDataToCtrl((label,value))
 
-    def removeFromData(self, label):
-        self.data.pop(label, None)
+
 
     def forwardDataToCtrl(self, data : Tuple[str,Any]):
         if self.ctrlDataQueue is not None:

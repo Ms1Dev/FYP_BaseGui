@@ -23,6 +23,8 @@ class Ctrl:
         "mobile_pressure"
     ]
 
+    ping_timout_s = 8.0
+
     def __init__(self):
 
         self.interface = Interface(self)
@@ -42,6 +44,8 @@ class Ctrl:
         self.base_alt_relative = None
         self.calibratedVerticalDiff = self.loadCalibrationValue()
         self.manual_antenna_ctrl = False
+        self.latest_ping_id = 100
+        self.ping_timeout_timer = None
 
 
     def begin(self):
@@ -120,7 +124,43 @@ class Ctrl:
             self.moveAntenna(el = elevation)
 
 
+    def getLatestPingId(self):
+        self.latest_ping_id += 1
+        if self.latest_ping_id > 999:
+            self.latest_ping_id = 100
+        return self.latest_ping_id
+    
+
+    def pingSent(self, pingSentWhen):
+        self.browserPingSentWhen = pingSentWhen
+        self.internalPingSentWhen = time.time()
+        self.hc12Connection.getSerialDevice().send("␅" + str(self.getLatestPingId()))
+        if self.ping_timeout_timer:
+            self.ping_timeout_timer.cancel()
+        self.ping_timeout_timer = threading.Timer(self.ping_timout_s, self.pingTimeout)
+        self.ping_timeout_timer.start()
+
+
+    def pingReceived(self, pingId):
+        if int(pingId) == self.latest_ping_id:
+            self.ping_timeout_timer.cancel()
+            now = time.time() * 1000
+            webReqTime = self.browserPingSentWhen
+            ctrlToHc12 = self.internalPingSentWhen * 1000
+            self.data.broadcast("ping",[webReqTime,ctrlToHc12,now])
+
+
+    def pingTimeout(self):
+        self.latest_ping_id += 1
+        now = time.time() * 1000
+        webReqTime = self.browserPingSentWhen
+        ctrlToHc12 = self.internalPingSentWhen * 1000
+        self.data.broadcast("ping",[webReqTime,ctrlToHc12,now,"Timeout"])
+
+
     def newData(self, data : Tuple[str, Any]):
+        if data[0] == "ping":
+            self.pingReceived(data[1])
         if data[0] == "base_gps_pos":
             self.base_pos.newData((data[1]["lat"], data[1]["lon"]))
             self.data.addToData("base_ctrl_coord", self.base_pos.getLatest())
@@ -174,6 +214,8 @@ class Ctrl:
             self.moveAntenna(el = cmd["elevation"])
         elif "transmit" in cmd:
             self.hc12Connection.getSerialDevice().send(cmd["transmit"])
+        elif "ping" in cmd:
+            self.pingSent(cmd["ping"])
         elif "info" in cmd:
             self.sendInfo()
 

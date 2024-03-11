@@ -11,16 +11,19 @@ class Altitude:
 
     def newData(self, pressure):
         altitude = self.altFromPressure(pressure)
-        self.altitude_history.appendleft(altitude)
-        self.resizeData() 
-        self.latest_altitude = self.getAltitude()
+        if altitude is not None:
+            self.altitude_history.appendleft(altitude)
+            self.resizeData() 
+            self.latest_altitude = self.getAltitude()
         
 
     def altFromPressure(self, pressure):
-        pressure = float(pressure)
-        pressure = pressure * 100 # convert to pa
-        return atmosphere.pres2alt(pressure)
-    
+        try:
+            pressure = float(pressure)
+            pressure = pressure * 100 # convert to pa
+            return atmosphere.pres2alt(pressure)
+        except:
+            pass
 
     def avgLocation(self):
         self.mode = "avg"

@@ -25,8 +25,6 @@ class Interface:
 
     def __init__(self, control) -> None:
         self.control = control
-
-
         PIN = board.D26
         led = digitalio.DigitalInOut(PIN)
         led.direction = digitalio.Direction.OUTPUT
