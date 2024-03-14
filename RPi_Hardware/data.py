@@ -11,7 +11,7 @@ class Data:
     pressureUnits = "mb"
     temperatureUnits = "°C"
     mobileNmeaSentenceType = "GNGGA"
-    baseNmeaSentenceType = "GPGGA"
+    baseNmeaSentenceType = "GNGGA"
 
     class Connection(threading.Thread):
         def __init__(self, connectedDevice : deviceManager.ConnectedDevice, recvCallback):

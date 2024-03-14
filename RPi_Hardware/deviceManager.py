@@ -37,8 +37,8 @@ def monitorPorts():
 
 
 antenna = ConnectedDevice("USB Serial", 9600)
-gps = ConnectedDevice("u-blox 7", 115200)
-barometric = ConnectedDevice("CP2102", 9600)
+gps = ConnectedDevice("CP2102 GPS Dongle", 9600)
+barometric = ConnectedDevice("CP2102 Barometric Dongle", 9600)
 hc12 = ConnectedDevice("HC12", 9600)
 usbDevices = [
     antenna,

@@ -37,6 +37,7 @@ class Interface:
             ]),
             Info("Connection details", tasks.getConnectionInfo),
             Process("Calibrate height", self.control.calibrateVerticalDistance),
+            Process("Home antenna", self.control.homeAntenna),
             LiveInfo("Base Location", tasks.base_pos),
             LiveInfo("Antenna Pos", tasks.antenna_pos)
         ])
