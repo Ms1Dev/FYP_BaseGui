@@ -16,8 +16,11 @@ class ConnectedDevice:
     
     def connect(self, port):
         if not self.isConnected():
-            self.serialDevice = serialDevice.SerialDevice(port, self.baudrate)
-            self.serialDevice.addConnectionFailCallback(self.connectionFailCallback)
+            try:
+                self.serialDevice = serialDevice.SerialDevice(port, self.baudrate)
+                self.serialDevice.addConnectionFailCallback(self.connectionFailCallback)
+            except:
+                self.serialDevice = None
 
     def getSerialDevice(self):
         return self.serialDevice
@@ -39,12 +42,16 @@ def monitorPorts():
 antenna = ConnectedDevice("USB Serial", 9600)
 gps = ConnectedDevice("CP2102 GPS Dongle", 9600)
 barometric = ConnectedDevice("CP2102 Barometric Dongle", 9600)
+compass = ConnectedDevice("USB-Serial Controller", 9600)
 hc12 = ConnectedDevice("HC12", 9600)
+
 usbDevices = [
     antenna,
     gps,
-    barometric
+    barometric,
+    compass
 ]
+
 context = pyudev.Context()
 monitorThread = threading.Thread(target=monitorPorts)
 monitorThread.daemon = True

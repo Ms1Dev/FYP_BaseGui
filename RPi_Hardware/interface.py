@@ -36,8 +36,17 @@ class Interface:
                 Process("Access Point", tasks.wifiAPMode)
             ]),
             Info("Connection details", tasks.getConnectionInfo),
-            Process("Calibrate height", self.control.calibrateVerticalDistance),
-            Process("Home antenna", self.control.homeAntenna),
+            Submenu("Commands",[
+                Process("Start logging", self.control.beginLoggingCoordinates),
+                Process("Stop logging", self.control.stopLoggingCoordinates),
+                Process("Calibrate height", self.control.calibrateVerticalDistance),
+                Process("Home antenna", self.control.homeAntenna)
+            ]),
+            Info("Data log files", tasks.getLogFileList),
+            Submenu("Compass", [
+                Process("On", self.control.absoluteBearing),
+                Process("Off", self.control.relativeBearing)
+            ]),
             LiveInfo("Base Location", tasks.base_pos),
             LiveInfo("Antenna Pos", tasks.antenna_pos)
         ])

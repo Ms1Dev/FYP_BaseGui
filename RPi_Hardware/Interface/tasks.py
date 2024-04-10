@@ -4,6 +4,7 @@ import netifaces
 import zmq
 import threading
 import json
+import os
 
 def wifiClientMode():
     result = subprocess.run("/home/michael-zwann/pidjango/ShellScripts/client_mode.sh", shell=True, capture_output=True, text=True, timeout=10)
@@ -35,6 +36,14 @@ def getConnectionInfo():
         pass
     return rows
 
+
+def getLogFileList():
+    try:
+        files = [file for file in os.listdir("/home/michael-zwann/coordinate_log/")]
+        files.sort(reverse=True)
+        return files
+    except OSError as e:
+        return None
 
 
 ############# Live Info ##################

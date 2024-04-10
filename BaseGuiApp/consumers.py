@@ -5,25 +5,30 @@ import zmq
 import asyncio
 import sys
 
+
 class GuiConsumer(AsyncWebsocketConsumer):
     def __init__(self):
         super().__init__()
         zmqContext = zmq.Context()
 
+        # listens for data from the hardware app
         self.receiver = zmqContext.socket(zmq.SUB)
         self.receiver.connect("tcp://127.0.0.1:5557")
         self.receiver.set_hwm(10000)
         self.receiver.subscribe("")
 
+        # pushes commands from browser to hardware app
         self.sender = zmqContext.socket(zmq.PUSH)
         self.sender.connect("tcp://127.0.0.1:5556")
+
 
     async def connect(self):
         await self.accept()
         self.messagePollingTask = asyncio.create_task(self.pollMessages())
 
+
     async def disconnect(self, close_code):
-        pass
+        self.messagePollingTask.cancel()
 
 
     async def receive(self, text_data):

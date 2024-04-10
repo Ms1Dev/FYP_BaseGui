@@ -55,7 +55,8 @@ class Data:
             "hc12"      : Data.Connection(deviceManager.hc12, self.receiveHc12),
             "gps"       : Data.Connection(deviceManager.gps, self.receiveGps),
             "barometric": Data.Connection(deviceManager.barometric, self.receiveBaro),
-            "antenna"   : Data.Connection(deviceManager.antenna, self.receiveAnt)
+            "antenna"   : Data.Connection(deviceManager.antenna, self.receiveAnt),
+            "compass"   : Data.Connection(deviceManager.compass, self.receiveCompass)
         }
         self.data = {}
         self.prevData = {}
@@ -85,13 +86,17 @@ class Data:
         if lastBroadcast:
             if currentTime - lastBroadcast > min_time:
                 self.broadcastTimings[label] = currentTime
-                dataJson = json.dumps({label : value})
-                self.messageSender.send_json(dataJson)
+                try:
+                    dataJson = json.dumps({label : value})
+                    self.messageSender.send_json(dataJson)
+                except Exception as e:
+                    print({label : value}, e)
         else:
             self.broadcastTimings[label] = currentTime
     
     
     def receiveHc12(self, data):
+        data = data.replace(b'\x00', b'')
         dataStr = data.decode("UTF-8", errors="ignore").strip()
         try:
             if dataStr[0] == "␆":
@@ -105,10 +110,17 @@ class Data:
         elif dataLabel == "T=":
             value = dataStr[2:]
             self.addToData("mobile_temperature", value + self.temperatureUnits)
-        else:
-            message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''), self.mobileNmeaSentenceType)
-            if message is not None:
-                self.addToData("mobile_gps_pos", self.formattedCoords(message))
+        elif dataLabel == "G=":
+            try:
+                value = dataStr[2:]
+                value = value.split(",")
+                self.addToData("mobile_gps_pos", {"lat": float(value[0]), "lon": float(value[1])})
+            except Exception as e:
+                print("Failed to convert mobile GPS pos - ", e)
+        # else:
+        #     message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''), self.mobileNmeaSentenceType)
+        #     if message is not None:
+        #         self.addToData("mobile_gps_pos", self.formattedCoords(message))
 
 
     def receiveGps(self, data):
@@ -133,6 +145,20 @@ class Data:
                 self.addToData("antenna_azimuth", data[3:])
             elif data[:3] == "EL=":
                 self.addToData("antenna_elevation", data[3:])
+        except:
+            pass
+
+
+    def receiveCompass(self, data):
+        try:
+            data = data.decode("UTF-8", errors="ignore").strip()
+            d = data.split(",")
+            if d[0][:1] == "C":
+                self.addToData("compass_calibration", (float(d[0][1:]), 1))
+            elif d[0][:1] == "V":
+                 self.addToData("compass_validation", (float(d[0][1:]), float(d[1])))
+            else:
+                self.addToData("compass_bearing", (float(d[0]), float(d[1])))
         except:
             pass
     

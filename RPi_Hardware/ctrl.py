@@ -13,14 +13,19 @@ import time
 from position import Position
 from altitude import Altitude
 from interface import Interface
+from coordinateLogger import CoordinateLogger
 
 class Ctrl:
-
+    compass_pos_offset = 10
+    
     pointsOfInterest = [
         "base_gps_pos",
         "mobile_gps_pos",
         "base_pressure",
-        "mobile_pressure"
+        "mobile_pressure",
+        "compass_bearing",
+        "compass_validation",
+        "compass_calibration"
     ]
 
     ping_timout_s = 8.0
@@ -30,6 +35,7 @@ class Ctrl:
         self.interface = Interface(self)
         self.antennaConnection = deviceManager.antenna
         self.hc12Connection = deviceManager.hc12
+        self.compassConnection = deviceManager.compass
         self.dataQueue = queue.Queue()
         self.cmdQueue = queue.Queue()
         self.data = data.Data(self.dataQueue,self.pointsOfInterest)
@@ -46,7 +52,10 @@ class Ctrl:
         self.manual_antenna_ctrl = False
         self.latest_ping_id = 100
         self.ping_timeout_timer = None
-
+        self.coordinateLogger = None
+        self.latest_bearing = 0
+        self.absolute_bearing = True
+        
 
     def begin(self):
         commandRecvThread = threading.Thread(target=self.cmdListen)
@@ -92,6 +101,16 @@ class Ctrl:
         return None
 
 
+    def getDistance(self):
+        h_distance = self.mobile_pos.getDistanceTo(self.base_pos)
+        v_distance = self.mobile_alt.getVerticalDistance(self.base_alt, self.calibratedVerticalDiff)
+        
+        if h_distance is None or v_distance is None:
+            return None
+
+        return math.sqrt(h_distance ** 2 + v_distance ** 2)
+
+
     def calibrateVerticalDistance(self):
         self.calibratedVerticalDiff = self.mobile_alt.getVerticalDistance(self.base_alt)
         if self.calibratedVerticalDiff:
@@ -108,6 +127,7 @@ class Ctrl:
                 el = str(math.trunc(el))
                 device.send("E" + el + "\n")
 
+
     def homeAntenna(self):
         self.antennaConnection.getSerialDevice().send("H1\n")
 
@@ -115,6 +135,8 @@ class Ctrl:
     def updateAntennaAzimuth(self):
         bearing = self.base_pos.getBearingTo(self.mobile_pos)
         if bearing is not None and not self.manual_antenna_ctrl:
+            if self.absolute_bearing:
+                bearing = ((bearing + 180 - self.latest_bearing + self.compass_pos_offset) % 360) - 180
             self.moveAntenna(az = bearing)
     
 
@@ -168,6 +190,9 @@ class Ctrl:
         elif data[0] == "mobile_gps_pos":
             self.mobile_pos.newData((data[1]["lat"], data[1]["lon"]))
             self.updateAntennaAzimuth()
+            distance = self.getDistance()
+            self.data.addToData("distance", distance)
+            self.logCoordinate(distance)
         elif data[0] == "base_pressure":
             unitsIndex = data[1].index("mb")
             pressure = data[1][:unitsIndex]
@@ -180,7 +205,12 @@ class Ctrl:
             self.alt_diff = self.mobile_alt.getVerticalDistance(self.base_alt, self.calibratedVerticalDiff)
             self.data.addToData("alt_diff",self.alt_diff)
             self.updateAntennaElevation()
-
+        elif data[0] == "compass_bearing":
+            self.latest_bearing = data[1][1]
+        elif data[0] == "compass_calibration":
+            pass
+        elif data[0] == "compass_validation":
+            pass
 
     def monitor(self):
         while True:
@@ -216,15 +246,43 @@ class Ctrl:
             self.hc12Connection.getSerialDevice().send(cmd["transmit"])
         elif "ping" in cmd:
             self.pingSent(cmd["ping"])
-        elif "info" in cmd:
-            self.sendInfo()
+        elif "bearing_absolute" in cmd:
+            self.absolute_bearing = cmd["bearing_absolute"]
+            self.data.addToData("base_bearing", self.absolute_bearing - 180 + self.compass_pos_offset)
+        elif "compass" in cmd:
+            if cmd["compass"] == "calibrate":
+                self.calibrateCompass()
+            elif cmd["compass"] == "validate":
+                self.validateCompass()
 
 
-    def sendInfo(self):
-        info = {
-            "manual_override" : self.manual_antenna_ctrl,
-            "antenna_pos_mode": self.base_pos.getMode()
-        }
+    def logCoordinate(self, distance):
+        if self.coordinateLogger is not None:
+            self.coordinateLogger.update(self.base_pos, self.mobile_pos, distance)
+
+
+    def beginLoggingCoordinates(self):
+        self.coordinateLogger = CoordinateLogger()
+
+    
+    def stopLoggingCoordinates(self):
+        self.coordinateLogger = None
+
+
+    def absoluteBearing(self):
+        self.absolute_bearing = True
+
+
+    def relativeBearing(self):
+        self.absolute_bearing = False
+
+    
+    def calibrateCompass(self):
+        self.compassConnection.serialDevice.send("C1\n")
+
+
+    def validateCompass(self):
+        self.compassConnection.serialDevice.send("V1\n")
 
 
     def setAntennaPosMode(self, command):

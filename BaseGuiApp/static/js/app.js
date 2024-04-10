@@ -165,9 +165,11 @@ let base_marker_no_update = false;
 let base_coords_input = $("#base-coordinates");
 let base_alt_input = $("#base-altitude");
 let base_temperature_input = $("#base-temperature");
+let base_bearing = $("#base-bearing");
 
 let mobile_coords_input = $("#mobile-coordinates");
 let mobile_alt_diff = $("#mobile-altitude-difference");
+let mobile_distance = $("#mobile-distance");
 let mobile_temperature_input = $("#mobile-temperature");
 
 let antenna_side_image = $("#antenna-side-image");
@@ -221,7 +223,11 @@ function dataReceived(data) {
     }
 
     if (data["alt_diff"]) {
-        mobile_alt_diff.val(data["alt_diff"].toFixed(1) + " m");
+        mobile_alt_diff.val(data["alt_diff"].toFixed(2) + " m");
+    }
+
+    if (data["distance"]) {
+        mobile_distance.val(data["distance"].toFixed(2) + " m");
     }
 
     if (data["base_temperature"]) {
@@ -255,6 +261,10 @@ function dataReceived(data) {
 
     if (data["mobile_temperature"]) {
         mobile_temperature_input.val(data["mobile_temperature"]);
+    }
+
+    if (data["compass_bearing"]) {
+        base_bearing.val(data["compass_bearing"][1]);
     }
 
 }
@@ -378,6 +388,34 @@ $("#base-pos-mode-man").on("click", function() {
         });
         base_marker_no_update = true;    
     }
+});
+
+
+$("#calibrate-compass").on("click", function() {
+    socket.send(JSON.stringify({
+        "compass" : "calibrate"
+    }));
+});
+
+
+$("#validate-compass").on("click", function() {
+    socket.send(JSON.stringify({
+        "compass" : "validate"
+    }));
+});
+
+
+$("#bearing-absolute").on("click", function() {
+    socket.send(JSON.stringify({
+        "bearing_absolute" : true 
+    }));
+});
+
+
+$("#bearing-relative").on("click", function() {
+    socket.send(JSON.stringify({
+        "bearing_absolute" : false 
+    }));
 });
 
 

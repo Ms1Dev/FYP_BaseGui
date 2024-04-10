@@ -18,6 +18,8 @@ class Altitude:
         
 
     def altFromPressure(self, pressure):
+        if pressure == "-9.99":
+            return
         try:
             pressure = float(pressure)
             pressure = pressure * 100 # convert to pa
@@ -70,7 +72,7 @@ class Altitude:
             alt_from = self.latest_altitude
             alt_to = altitudeTo.latest_altitude
             if alt_from is not None and alt_to is not None:
-                return alt_from - alt_to - offset
+                return (alt_from - alt_to - offset)
             return None
         except:
             return None
