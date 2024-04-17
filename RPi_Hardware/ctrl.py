@@ -16,7 +16,7 @@ from interface import Interface
 from coordinateLogger import CoordinateLogger
 
 class Ctrl:
-    compass_pos_offset = 10
+    compass_pos_offset = 20
     
     pointsOfInterest = [
         "base_gps_pos",
@@ -28,7 +28,7 @@ class Ctrl:
         "compass_calibration"
     ]
 
-    ping_timout_s = 8.0
+    ping_timout_s = 4.0
 
     def __init__(self):
 
@@ -73,7 +73,7 @@ class Ctrl:
     def cmdListen(self):
         while True:
             cmd = self.receiver.recv_json()
-            self.cmdQueue.put(cmd)
+            self.runCmd(cmd)
 
 
     def loadCalibrationValue(self):
@@ -121,11 +121,18 @@ class Ctrl:
         if self.antennaConnection.isConnected():
             device = self.antennaConnection.getSerialDevice()
             if az is not None:
+                az = self.getBearingFromAngle(az)
                 az = str(math.trunc(az))
                 device.send("A" + az + "\n")
             if el is not None:
                 el = str(math.trunc(el))
                 device.send("E" + el + "\n")
+
+
+    def getBearingFromAngle(self, angle):
+        if self.absolute_bearing:
+            return (((angle + 180 - self.latest_bearing + self.compass_pos_offset) % 360) - 180)
+        return angle
 
 
     def homeAntenna(self):
@@ -135,8 +142,6 @@ class Ctrl:
     def updateAntennaAzimuth(self):
         bearing = self.base_pos.getBearingTo(self.mobile_pos)
         if bearing is not None and not self.manual_antenna_ctrl:
-            if self.absolute_bearing:
-                bearing = ((bearing + 180 - self.latest_bearing + self.compass_pos_offset) % 360) - 180
             self.moveAntenna(az = bearing)
     
 
@@ -212,19 +217,11 @@ class Ctrl:
         elif data[0] == "compass_validation":
             pass
 
+
     def monitor(self):
         while True:
-            try:
-                self.newData(self.dataQueue.get(block=False))
-            except queue.Empty:
-                pass
-            try:
-                self.runCmd(self.cmdQueue.get(block=False))
-            except queue.Empty:
-                pass
-            
-            time.sleep(0.1)
-                
+            self.newData(self.dataQueue.get())
+
 
     def runCmd(self, cmd):
         if "cal" in cmd:

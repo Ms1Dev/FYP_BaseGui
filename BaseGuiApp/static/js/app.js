@@ -8,16 +8,16 @@
 
 $(document).ready(function() {
     disableControls();
+    $(".tick").hide();
 });
 
 
 var ping_sent = 0;
 var ping_timeout;
-const PING_TIMEOUT_MS = 12000;
+const PING_TIMEOUT_MS = 8000;
 
 $("#ping-button").on("click", function(e) {
     $(this).attr('disabled','disabled');
-    console.log(e.target);
     $("#ping-websocket").val("");
     $("#ping-hc12").val("");
     $("#ping-total").val("");
@@ -73,9 +73,13 @@ const socket = new WebSocket(
     // 'ws://' + "127.0.0.1:8001" + '/ws/gui/'
 );
 
+let log_messages = false;
+
 socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
-    console.log(data)
+    if (log_messages) {
+        console.log(data)
+    }
     if (data["ping"]) {
         pingReceived(data["ping"]);
         return;
@@ -100,51 +104,12 @@ socket.onopen = function(e) {
  * 
  */ 
 
-var map = L.map('map').setView([51.505, -0.09], 13);
+var map = L.map('map').setView([52.926, -1.127], 13);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
-
-
-function azimuthUpdate(value) {
-    socket.send(JSON.stringify({
-        "azimuth" : value["value"]
-    }));
-}
-
-function elevationUpdate(value) {
-    socket.send(JSON.stringify({
-        "elevation" : value["value"]
-    }));
-}
-
-$("#azimuth-slider").roundSlider({
-    radius: 60,
-    handleSize: "34,10",
-    sliderType: "default",
-    value: 0,
-    animation: false,
-    min: 0,
-    max: 360,
-    startAngle: 90,
-    change: "azimuthUpdate"
-});
-
-
-$("#elevation-slider").roundSlider({
-    radius: 80,
-    handleSize: "34,10",
-    circleShape: "custom-quarter",
-    sliderType: "min-range",
-    animation: false,
-    value: 0,
-    min: -45,
-    max: 45,
-    startAngle: 315,
-    change: "elevationUpdate"
-});
 
 
 
@@ -158,8 +123,8 @@ $("#elevation-slider").roundSlider({
  */
 
 
-var base_marker = null;
-var mobile_marker = null;
+let base_marker = null;
+let mobile_marker = null;
 let base_marker_no_update = false;
 
 let base_coords_input = $("#base-coordinates");
@@ -173,13 +138,14 @@ let mobile_distance = $("#mobile-distance");
 let mobile_temperature_input = $("#mobile-temperature");
 
 let antenna_side_image = $("#antenna-side-image");
-var antenna_current_elevation = 0;
+let antenna_current_elevation = 0;
 let antenna_elevation_value = $("#antenna-elevation-value");
 
 let antenna_top_image = $("#antenna-top-image");
-var antenna_current_bearing = 0;
+let antenna_current_bearing = 0;
 let antenna_azimuth_value = $("#antenna-azimuth-value");
 
+let coordinate_offset = [0.0, 0.0];
 
 let jumped_to_location = false;
 
@@ -201,8 +167,8 @@ var base_marker_icon = new L.Icon({
 
 function dataReceived(data) {
     if (data["base_ctrl_coord"]) {
-        let lat = data["base_ctrl_coord"][0];
-        let lon = data["base_ctrl_coord"][1];
+        let lat = data["base_ctrl_coord"][0] + coordinate_offset[0];
+        let lon = data["base_ctrl_coord"][1] + coordinate_offset[1];
         if (base_marker == null) {
             base_marker = new L.Marker([lat, lon], {icon: base_marker_icon});
             base_marker.addTo(map);
@@ -247,8 +213,8 @@ function dataReceived(data) {
     }
 
     if (data["mobile_gps_pos"]) {
-        let lat = data["mobile_gps_pos"]["lat"];
-        let lon = data["mobile_gps_pos"]["lon"];
+        let lat = data["mobile_gps_pos"]["lat"] + coordinate_offset[0];
+        let lon = data["mobile_gps_pos"]["lon"] + coordinate_offset[1];
         if (mobile_marker == null) {
             mobile_marker = new L.Marker([lat, lon], {icon: mobile_marker_icon});
             mobile_marker.addTo(map);
@@ -294,6 +260,44 @@ function enableControls() {
  * 
  */
 
+function azimuthUpdate(value) {
+    socket.send(JSON.stringify({
+        "azimuth" : value["value"]
+    }));
+}
+
+function elevationUpdate(value) {
+    socket.send(JSON.stringify({
+        "elevation" : value["value"]
+    }));
+}
+
+$("#azimuth-slider").roundSlider({
+    radius: 60,
+    handleSize: "34,10",
+    sliderType: "default",
+    value: 0,
+    animation: false,
+    min: 0,
+    max: 360,
+    startAngle: 90,
+    change: "azimuthUpdate"
+});
+
+
+$("#elevation-slider").roundSlider({
+    radius: 80,
+    handleSize: "34,10",
+    circleShape: "custom-quarter",
+    sliderType: "min-range",
+    animation: false,
+    value: 0,
+    min: -45,
+    max: 45,
+    startAngle: 315,
+    change: "elevationUpdate"
+});
+
 
 $("#manualOverride").change(function() {
     if ($(this).is(":checked")) {
@@ -311,6 +315,32 @@ $("#manualOverride").change(function() {
         $("#azimuth-slider-wrapper").hide(500);
         $("#elevation-slider-wrapper").hide(500);
         $("label[for='manualOverride']").html("Auto");
+    }
+});
+
+
+$("#log-messages").on("click", function() {
+    log_messages = !log_messages;
+    $(this).find(".tick").toggle();
+});
+
+
+$("#anonymise-pos").on("click", function(e) {
+    let _lat = Math.random() * 40 - 20;
+    let _lon = Math.random() * 40 - 20;
+
+    console.log(_lat);
+    console.log(_lon);
+
+    if (coordinate_offset[0] == 0 && coordinate_offset[1] == 0) {
+        coordinate_offset[0] = _lat;
+        coordinate_offset[1] = _lon;
+        $(this).find(".tick").show();
+    }
+    else {
+        coordinate_offset[0] = 0;
+        coordinate_offset[1] = 0;
+        $(this).find(".tick").hide();
     }
 });
 
@@ -375,19 +405,23 @@ $("#base-pos-mode-man").on("click", function() {
         }
     }));
 
-    if (base_marker) {
-        base_marker.dragging.enable();
-        base_marker.on("dragend", function(event) {
-            let latlng = event.target.getLatLng();
-            socket.send(JSON.stringify({
-                "antenna_pos" : {
-                    "mode" : "fixed",
-                    "pos" : [latlng["lat"], latlng["lng"]]
-                }
-            }));
-        });
-        base_marker_no_update = true;    
+    if (!base_marker) {
+        base_marker = new L.Marker([map.lat, map.lon], {icon: base_marker_icon});
+        base_marker.addTo(map);
     }
+
+    base_marker.dragging.enable();
+        base_marker.on("dragend", function(event) {
+        let latlng = event.target.getLatLng();
+        socket.send(JSON.stringify({
+            "antenna_pos" : {
+                "mode" : "fixed",
+                "pos" : [latlng["lat"], latlng["lng"]]
+            }
+        }));
+    });
+    base_marker_no_update = true;    
+    
 });
 
 

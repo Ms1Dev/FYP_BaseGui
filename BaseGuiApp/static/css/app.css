@@ -15,6 +15,10 @@
     flex: 1 !important;
 }
 
+.tick {
+    color: white !important;
+}
+
 .control-interface-card {
     flex: 1;
 }
