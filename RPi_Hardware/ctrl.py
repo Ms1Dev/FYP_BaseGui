@@ -1,13 +1,9 @@
 import deviceManager
 import data
-from pynmeagps import nmeahelpers
 from typing import Tuple, Any
 import queue
 import threading
 import math
-import socket
-import oled
-from pvlib import atmosphere
 import zmq
 import time
 from position import Position
@@ -15,9 +11,13 @@ from altitude import Altitude
 from interface import Interface
 from coordinateLogger import CoordinateLogger
 
+
 class Ctrl:
-    compass_pos_offset = 20
-    
+    """
+        Main control for all hardware components.
+        Calculates angle for antenna and automatically sends commands.
+    """
+
     pointsOfInterest = [
         "base_gps_pos",
         "mobile_gps_pos",
@@ -131,7 +131,7 @@ class Ctrl:
 
     def getBearingFromAngle(self, angle):
         if self.absolute_bearing:
-            return (((angle + 180 - self.latest_bearing + self.compass_pos_offset) % 360) - 180)
+            return (((angle + 180 - self.latest_bearing) % 360) - 180)
         return angle
 
 
@@ -245,12 +245,21 @@ class Ctrl:
             self.pingSent(cmd["ping"])
         elif "bearing_absolute" in cmd:
             self.absolute_bearing = cmd["bearing_absolute"]
-            self.data.addToData("base_bearing", self.absolute_bearing - 180 + self.compass_pos_offset)
+            self.data.addToData("base_bearing", self.absolute_bearing - 180)
         elif "compass" in cmd:
             if cmd["compass"] == "calibrate":
                 self.calibrateCompass()
             elif cmd["compass"] == "validate":
                 self.validateCompass()
+        elif "get_state" in cmd:
+            self.data.addToData("state", self.getState())
+
+
+    def getState(self):
+        return {
+            "man"           : self.manual_antenna_ctrl,
+            "abs_bearing"   : self.absolute_bearing
+        }
 
 
     def logCoordinate(self, distance):

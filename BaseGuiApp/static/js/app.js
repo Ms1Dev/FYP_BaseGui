@@ -92,6 +92,9 @@ socket.onclose = function(e) {
 };
 
 socket.onopen = function(e) {
+    socket.send(JSON.stringify({
+        "get_state" : 1
+    }));
     enableControls();
 }
 
@@ -146,6 +149,8 @@ let antenna_current_bearing = 0;
 let antenna_azimuth_value = $("#antenna-azimuth-value");
 
 let coordinate_offset = [0.0, 0.0];
+let absolute_bearing = false;
+let compass_bearing = 0;
 
 let jumped_to_location = false;
 
@@ -166,6 +171,14 @@ var base_marker_icon = new L.Icon({
   });
 
 function dataReceived(data) {
+    if (data["state"]) {
+        absolute_bearing = data["state"]["abs_bearing"];
+        if (data["state"]["man"]) {
+            controlOverride(true);
+            $("#manualOverride").prop("checked", true);
+        }
+    }
+
     if (data["base_ctrl_coord"]) {
         let lat = data["base_ctrl_coord"][0] + coordinate_offset[0];
         let lon = data["base_ctrl_coord"][1] + coordinate_offset[1];
@@ -201,9 +214,13 @@ function dataReceived(data) {
     }
 
     if (data["antenna_azimuth"]) {
-        move_degrees = data["antenna_azimuth"] - antenna_current_bearing;
+        let angle = parseFloat( data["antenna_azimuth"] );
+        if (absolute_bearing) {
+            angle += compass_bearing;
+        }
+        move_degrees = angle - antenna_current_bearing;
         antenna_top_image.css("transform", "rotate(" + move_degrees + "deg)");
-        antenna_azimuth_value.html("Bearing: " + data["antenna_azimuth"] + "°");
+        antenna_azimuth_value.html("Bearing: " + Math.round(angle) + "°");
     }
 
     if (data["antenna_elevation"]) {
@@ -230,7 +247,8 @@ function dataReceived(data) {
     }
 
     if (data["compass_bearing"]) {
-        base_bearing.val(data["compass_bearing"][1]);
+        compass_bearing = data["compass_bearing"][1];
+        base_bearing.val(compass_bearing);
     }
 
 }
@@ -300,7 +318,11 @@ $("#elevation-slider").roundSlider({
 
 
 $("#manualOverride").change(function() {
-    if ($(this).is(":checked")) {
+    controlOverride($(this).is(":checked"));
+});
+
+function controlOverride (isManual) {  
+    if (isManual) {
         socket.send(JSON.stringify({
             "antenna_ctrl" : "man"
         }));
@@ -316,7 +338,8 @@ $("#manualOverride").change(function() {
         $("#elevation-slider-wrapper").hide(500);
         $("label[for='manualOverride']").html("Auto");
     }
-});
+}
+
 
 
 $("#log-messages").on("click", function() {
@@ -326,11 +349,8 @@ $("#log-messages").on("click", function() {
 
 
 $("#anonymise-pos").on("click", function(e) {
-    let _lat = Math.random() * 40 - 20;
-    let _lon = Math.random() * 40 - 20;
-
-    console.log(_lat);
-    console.log(_lon);
+    let _lat = Math.random() * 20;
+    let _lon = Math.random() * 20;
 
     if (coordinate_offset[0] == 0 && coordinate_offset[1] == 0) {
         coordinate_offset[0] = _lat;

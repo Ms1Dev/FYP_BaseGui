@@ -5,15 +5,25 @@ import threading
 import zmq
 import json
 from typing import Tuple, Any
-import queue
+
 
 class Data:
+    """
+        This object collects data from the various serial devices and then broadcasts it over TCP.
+        Some data is passed directly to the Ctrl class.
+    """
+
     pressureUnits = "mb"
     temperatureUnits = "°C"
     mobileNmeaSentenceType = "GNGGA"
     baseNmeaSentenceType = "GNGGA"
+    compass_offset = -30
 
     class Connection(threading.Thread):
+        """
+            Connection to a serial device that listens for new data.
+        """
+        
         def __init__(self, connectedDevice : deviceManager.ConnectedDevice, recvCallback):
             super().__init__()
             self.connectedDevice = connectedDevice
@@ -117,10 +127,6 @@ class Data:
                 self.addToData("mobile_gps_pos", {"lat": float(value[0]), "lon": float(value[1])})
             except Exception as e:
                 print("Failed to convert mobile GPS pos - ", e)
-        # else:
-        #     message : NMEAMessage = self.filterGpsSentence(data.replace(b'\x00', b''), self.mobileNmeaSentenceType)
-        #     if message is not None:
-        #         self.addToData("mobile_gps_pos", self.formattedCoords(message))
 
 
     def receiveGps(self, data):
@@ -158,7 +164,8 @@ class Data:
             elif d[0][:1] == "V":
                  self.addToData("compass_validation", (float(d[0][1:]), float(d[1])))
             else:
-                self.addToData("compass_bearing", (float(d[0]), float(d[1])))
+                reading = float(d[1]) + self.compass_offset
+                self.addToData("compass_bearing", (float(d[0]), reading))
         except:
             pass
     

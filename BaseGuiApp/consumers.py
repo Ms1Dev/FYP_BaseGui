@@ -27,10 +27,6 @@ class GuiConsumer(AsyncWebsocketConsumer):
         self.messagePollingTask = asyncio.create_task(self.pollMessages())
 
 
-    async def disconnect(self, close_code):
-        self.messagePollingTask.cancel()
-
-
     async def receive(self, text_data):
         data_json = json.loads(text_data)
         self.sender.send_json(data_json)
