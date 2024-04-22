@@ -1,0 +1,23 @@
+{% extends 'shared/_base.html' %}
+
+
+{% block content_base %}
+
+
+<div class="container d-flex flex-row vh-100">
+
+    <div class="card m-auto p-3">
+        <form class="d-flex flex-column" method="post">
+            {% csrf_token %}
+            <label for="username">Username</label>
+            <input id="username" name="username" class="form-control">
+            <label for="password">Password</label>
+            <input type="password" name="password" class="form-control" id="password">
+            <button type="submit" class="btn btn-primary my-3">Log in</button>
+        </form>
+    </div>
+    
+</div>
+
+
+{% endblock %}
