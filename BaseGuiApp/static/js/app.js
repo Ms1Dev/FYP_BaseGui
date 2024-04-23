@@ -109,13 +109,18 @@ socket.onopen = function(e) {
 
 var map = L.map('map').setView([52.926, -1.127], 13);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+let tile_loc = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+let tile_zoom = 19;
+
+if (!navigator.onLine) {
+    tile_loc =  '../static/mapTiles/{z}/{x}/{y}.png';
+    tile_zoom = 16;
+}
+
+L.tileLayer(tile_loc, {
+    maxZoom: tile_zoom,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
-
-
-
 
 
 /**
@@ -248,7 +253,7 @@ function dataReceived(data) {
 
     if (data["compass_bearing"]) {
         compass_bearing = data["compass_bearing"][1];
-        base_bearing.val(compass_bearing);
+        base_bearing.val(compass_bearing.toFixed(2));
     }
 
 }
