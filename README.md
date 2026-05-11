@@ -4,7 +4,7 @@ A Django web application that controls a directional tracking antenna in real ti
 
 This repository contains the **base control software** — the Django app, the hardware control daemon, and the deployment configuration that runs on a Raspberry Pi 4B. The companion repository [FYP_RPi_Pico_Portable_Device](https://github.com/Ms1Dev/FYP_RPi_Pico_Portable_Device) contains the firmware for the portable device that the antenna tracks.
 
-![Assembled tracking antenna system](docs/antenna-hero.jpg)
+![Assembled tracking antenna system](fyp_antenna_assembled.png)
 
 ## What it does
 
@@ -17,13 +17,13 @@ A user opens a browser, connects to the Raspberry Pi over LAN (or directly via t
 
 In automatic mode, the Pi continuously calculates the bearing and elevation needed to point the antenna at the portable device and dispatches movement commands to a microcontroller-driven gimbal. The whole loop — portable device transmits GNSS → base receives → recalculates pointing → moves the antenna — runs in real time over a half-duplex 433 MHz wireless link.
 
-![Web control interface](docs/web-ui.png)
+![Web control interface](fyp_antenna_django_ui.png)
 
 ## Architecture
 
 The system is split into two cooperating processes on the Pi, plus a stack of supporting infrastructure:
 
-![System architecture](docs/architecture.png)
+![System architecture](fyp_antenna_component_diagram.jpg)
 
 **Why two processes?** Hardware control needs to run continuously as a single instance, polling serial ports and driving actuators. A web app runs in response to requests and may spin up multiple workers. Putting both in one Django process would have been a mess. Instead:
 
@@ -49,7 +49,7 @@ The system is split into two cooperating processes on the Pi, plus a stack of su
 
 ## The hardware being controlled
 
-![Internal view of the antenna gimbal](docs/antenna-internals.png)
+![Internal view of the antenna gimbal](control_cutaway.png)
 
 A two-axis gimbal carrying a 433 MHz Yagi-Uda directional antenna. Elevation is driven by a positional servo with a 2:1 reduction gear; azimuth uses a DC motor with a 3D-printed quadrature optical encoder for positional feedback and two limit switches to prevent wiring damage from over-rotation. The motor and encoder are controlled by an Arduino Nano that communicates with the Pi over USB serial.
 
@@ -66,7 +66,7 @@ The full evaluation is in the project report, but the headlines:
 - **Tracking:** held the portable device through a full 360° sweep and through a perimeter walk that demanded continuous azimuth correction.
 - **Latency:** mean round-trip from browser → server → portable device → server → browser was 253 ms (median 222 ms), of which roughly 113 ms is the wireless link itself.
 
-![Range test — 234m successful transmission](docs/range-test.png)
+![Range test — 234m successful transmission](fyp_antenna_result_map.jpg)
 
 ## Repository layout
 
